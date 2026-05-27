@@ -131,11 +131,22 @@ def _execute(db: Session, scan: Scan) -> None:
     db.add(scan)
     db.commit()
 
-    if scan.mode == ScanMode.live and not settings.bright_data_rest_configured():
-        events.warning("live mode requested but Bright Data REST is not configured; falling back to mock")
-        scan.mode = ScanMode.mock
-        db.add(scan)
-        db.commit()
+    if scan.mode == ScanMode.live:
+        # Same safety gate as the API: require BOTH SIGNALGRAPH_MOCK_MODE=false
+        # AND configured Bright Data REST. This protects against accidental
+        # credit burn even if the runner is invoked directly.
+        if settings.signalgraph_mock_mode or not settings.bright_data_rest_configured():
+            reason = (
+                "SIGNALGRAPH_MOCK_MODE is true"
+                if settings.signalgraph_mock_mode
+                else "Bright Data REST is not configured"
+            )
+            events.warning(
+                f"live mode requested but {reason}; falling back to mock"
+            )
+            scan.mode = ScanMode.mock
+            db.add(scan)
+            db.commit()
 
     account = db.get(Account, scan.account_id)
     if account is None:

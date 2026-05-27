@@ -19,6 +19,7 @@ from app.models.enums import (
     ScanStatus,
 )
 from app.models.evidence import EvidenceDocument
+from app.models.helpers import as_str
 from app.models.scan import Scan
 from app.models.scan_event import ScanEvent
 from app.models.signal import Signal
@@ -53,11 +54,15 @@ def _enforce_phase_timeout(db: Session, scan: Scan, settings: Settings) -> None:
     started = scan.started_at or scan.updated_at
     if started is None:
         return
+    # SQLite drops timezone info on read; coerce naive to UTC for comparison.
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=UTC)
     age = (datetime.now(UTC) - started).total_seconds()
     if age <= settings.signalgraph_scan_phase_timeout_seconds:
         return
+    stuck_phase = as_str(scan.status)
     scan.status = ScanStatus.failed
-    scan.error_message = f"phase_timeout:{scan.status.value}"
+    scan.error_message = f"phase_timeout:{stuck_phase}"
     scan.completed_at = datetime.now(UTC)
     scan.progress_percent = 100
     db.add(scan)
@@ -172,10 +177,13 @@ def create_scan(
             db.add(s)
         db.commit()
 
-    # Mode coercion: live without configured Bright Data falls back to mock.
+    # Mode coercion: live requires BOTH SIGNALGRAPH_MOCK_MODE=false AND
+    # configured Bright Data REST. This is the safety gate against
+    # accidental Bright Data credit burn while developing locally.
     requested_mode = body.mode
-    if requested_mode == ScanMode.live and not settings.bright_data_rest_configured():
-        requested_mode = ScanMode.mock
+    if requested_mode == ScanMode.live:
+        if settings.signalgraph_mock_mode or not settings.bright_data_rest_configured():
+            requested_mode = ScanMode.mock
 
     scan = Scan(
         account_id=account_id,

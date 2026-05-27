@@ -190,6 +190,80 @@ def test_live_mode_falls_back_to_mock_when_unconfigured(
     assert body["mode"] == "mock"
 
 
+def test_live_mode_requires_mock_mode_false(
+    client: TestClient, seeded_account: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Safety gate: even with Bright Data configured, live needs SIGNALGRAPH_MOCK_MODE=false."""
+    # Bright Data REST stays configured (from .env) but mock mode is on.
+    monkeypatch.setenv("SIGNALGRAPH_MOCK_MODE", "true")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    create = client.post(
+        f"/api/v1/accounts/{seeded_account}/scans",
+        json={"mode": "live"},
+    )
+    assert create.status_code == 201
+    assert create.json()["mode"] == "mock"
+
+
+def test_live_mode_proceeds_when_gate_open(
+    client: TestClient, seeded_account: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When SIGNALGRAPH_MOCK_MODE=false and Bright Data is configured, live is honored."""
+    monkeypatch.setenv("SIGNALGRAPH_MOCK_MODE", "false")
+    monkeypatch.setenv("BRIGHT_DATA_API_KEY", "test-key")
+    monkeypatch.setenv("BRIGHT_DATA_SERP_ZONE", "test-serp")
+    monkeypatch.setenv("BRIGHT_DATA_UNLOCKER_ZONE", "test-unlocker")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    create = client.post(
+        f"/api/v1/accounts/{seeded_account}/scans",
+        json={"mode": "live"},
+    )
+    assert create.status_code == 201
+    # The API does not coerce; Phase 2's runner will warn and process as mock.
+    assert create.json()["mode"] == "live"
+
+
+def test_watchdog_records_stuck_phase(
+    client: TestClient, seeded_account: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The phase_timeout error_message should reference the actual stuck phase."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.db import get_sessionmaker
+    from app.models.enums import ScanStatus
+    from app.models.scan import Scan
+
+    # Force a tiny timeout so the watchdog fires immediately on read.
+    monkeypatch.setenv("SIGNALGRAPH_SCAN_PHASE_TIMEOUT_SECONDS", "1")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    SessionLocal = get_sessionmaker()
+    with SessionLocal() as db:
+        scan = Scan(
+            account_id=seeded_account,
+            scan_type="account_watchtower",
+            status=ScanStatus.scraping,
+            mode="mock",
+            progress_percent=35,
+            started_at=datetime.now(UTC) - timedelta(seconds=120),
+        )
+        db.add(scan)
+        db.commit()
+        scan_id = scan.id
+
+    body = client.get(f"/api/v1/scans/{scan_id}").json()
+    assert body["status"] == "failed"
+    assert body["error_message"] == "phase_timeout:scraping"
+
+
 def test_memory_jsonl_written_for_scan(client: TestClient, seeded_account: str) -> None:
     create = client.post(
         f"/api/v1/accounts/{seeded_account}/scans",
