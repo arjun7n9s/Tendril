@@ -83,3 +83,31 @@ class ScanEventLogger:
 
     def info(self, message: str, **metadata: Any) -> ScanEvent:
         return self.emit(ScanEventType.info, message, metadata=metadata or None)
+
+    def bright_data_call(
+        self,
+        message: str,
+        *,
+        phase: ScanStatus | None = None,
+        replayed: bool = False,
+        **metadata: Any,
+    ) -> ScanEvent:
+        event_type = (
+            ScanEventType.bright_data_call_replayed
+            if replayed
+            else ScanEventType.bright_data_call
+        )
+        return self.emit(event_type, message, phase=phase, metadata=metadata or None)
+
+    def aiml_call(
+        self,
+        message: str,
+        *,
+        phase: ScanStatus | None = None,
+        replayed: bool = False,
+        **metadata: Any,
+    ) -> ScanEvent:
+        event_type = (
+            ScanEventType.aiml_call_replayed if replayed else ScanEventType.aiml_call
+        )
+        return self.emit(event_type, message, phase=phase, metadata=metadata or None)

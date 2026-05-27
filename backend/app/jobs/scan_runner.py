@@ -4,13 +4,14 @@ Walks states queued -> discovering -> scraping -> extracting -> graphing
 -> scoring -> briefing -> completed (or failed). Every transition
 commits to the DB before yielding so progress survives process restarts.
 
-Phase 2: only the `mock` mode path is exercised end to end. Phase 3+
-swap in the live Bright Data and AI/ML clients behind the same
-interfaces.
+Phase 2: only the `mock` mode path is exercised end to end.
+Phase 3: `live` mode wires up Bright Data SERP + Web Unlocker (with
+Browser API fallback). Live extraction stays mock until Phase 4.
 """
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -41,6 +42,7 @@ from app.models.scan import Scan
 from app.models.score import Score
 from app.models.signal import Signal
 from app.models.source import Source
+from app.services.brightdata_client import BrightDataRestClient
 from app.services.briefing import generate_brief, generate_outreach
 from app.services.guardrails import check_outreach
 from app.services.memory_service import JsonlMemoryService, MemoryPacket
@@ -51,6 +53,8 @@ from app.services.mock_fixtures import (
 )
 from app.services.scan_events import ScanEventLogger
 from app.services.scorer import ScoringInput, compute_scores, load_default_icp
+from app.services.scraper import scrape_source_live
+from app.services.source_discovery import discover_sources_live
 
 log = get_logger("scan_runner")
 
@@ -158,10 +162,11 @@ def _execute(db: Session, scan: Scan) -> None:
     _commit_phase(db, scan, ScanStatus.discovering, _percent_for_phase(ScanStatus.discovering))
     events.phase_started(ScanStatus.discovering)
 
-    if scan.mode == ScanMode.mock:
-        sources = _mock_discovery(db, scan, account, events)
-    else:  # live and cached treated as mock for Phase 2; live wired in Phase 3
-        events.warning("phase 2 has only mock discovery wired; using fixtures")
+    icp = load_default_icp(db)
+
+    if scan.mode == ScanMode.live:
+        sources = asyncio.run(_live_discovery(db, scan, account, icp, events))
+    else:
         sources = _mock_discovery(db, scan, account, events)
 
     db.commit()
@@ -179,12 +184,18 @@ def _execute(db: Session, scan: Scan) -> None:
     selected = [s for s in sources if s.selected_for_scrape]
     evidence_rows: list[EvidenceDocument] = []
     failed_count = 0
-    for src in selected:
-        ev = _mock_fetch(db, scan, account, src, events)
-        if ev is None:
-            failed_count += 1
-            continue
-        evidence_rows.append(ev)
+
+    if scan.mode == ScanMode.live:
+        evidence_rows, failed_count = asyncio.run(
+            _live_scrape(db, scan, account, selected, events)
+        )
+    else:
+        for src in selected:
+            ev = _mock_fetch(db, scan, account, src, events)
+            if ev is None:
+                failed_count += 1
+                continue
+            evidence_rows.append(ev)
 
     db.commit()
     if not evidence_rows:
@@ -199,7 +210,10 @@ def _execute(db: Session, scan: Scan) -> None:
     _commit_phase(db, scan, ScanStatus.extracting, _percent_for_phase(ScanStatus.extracting))
     events.phase_started(ScanStatus.extracting)
 
-    signals = _mock_extract(db, scan, account, evidence_rows, events)
+    if scan.mode == ScanMode.live:
+        signals = _placeholder_live_extract(db, scan, account, evidence_rows, events)
+    else:
+        signals = _mock_extract(db, scan, account, evidence_rows, events)
     db.commit()
     events.phase_completed(ScanStatus.extracting, signals=len(signals))
     db.commit()
@@ -238,7 +252,7 @@ def _execute(db: Session, scan: Scan) -> None:
     _commit_phase(db, scan, ScanStatus.scoring, _percent_for_phase(ScanStatus.scoring))
     events.phase_started(ScanStatus.scoring)
 
-    icp = load_default_icp(db)
+    icp = load_default_icp(db) if icp is None else icp
     has_champion = any(as_str(p.role_type) == "champion" for p in account.people_current)
     scoring = compute_scores(
         ScoringInput(account=account, signals=signals, icp=icp, has_champion=has_champion)
@@ -501,5 +515,114 @@ def _mock_extract(
             "signal_count": len(signals),
             "doc_count": len(evidence_rows),
         },
+    )
+    return signals
+
+
+
+# ---------- Live helpers (Phase 3) ----------
+
+
+async def _live_discovery(
+    db: Session,
+    scan: Scan,
+    account: Account,
+    icp,
+    events: ScanEventLogger,
+) -> list[Source]:
+    async with BrightDataRestClient() as client:
+        return await discover_sources_live(
+            db,
+            scan=scan,
+            account=account,
+            icp=icp,
+            client=client,
+            events=events,
+            max_sources=6,
+        )
+
+
+async def _live_scrape(
+    db: Session,
+    scan: Scan,
+    account: Account,
+    selected: list[Source],
+    events: ScanEventLogger,
+) -> tuple[list[EvidenceDocument], int]:
+    evidence_rows: list[EvidenceDocument] = []
+    failed_count = 0
+    async with BrightDataRestClient() as client:
+        for src in selected:
+            try:
+                ev = await scrape_source_live(
+                    db,
+                    scan=scan,
+                    account=account,
+                    src=src,
+                    client=client,
+                    events=events,
+                )
+            except Exception as exc:  # noqa: BLE001
+                events.warning(
+                    "scraper raised",
+                    target_host=src.url.split("/")[2] if "://" in src.url else None,
+                    error_type=type(exc).__name__,
+                )
+                failed_count += 1
+                continue
+            if ev is None or ev.fetch_status != FetchStatus.success:
+                failed_count += 1
+                continue
+            evidence_rows.append(ev)
+    return evidence_rows, failed_count
+
+
+def _placeholder_live_extract(
+    db: Session,
+    scan: Scan,
+    account: Account,
+    evidence_rows: list[EvidenceDocument],
+    events: ScanEventLogger,
+) -> list[Signal]:
+    """Phase 3 placeholder: produce one low-confidence signal per fetched
+    evidence document so the rest of the pipeline (graph/score/brief)
+    remains functional. Real AI/ML extraction is Phase 4.
+    """
+    today = date.today()
+    signals: list[Signal] = []
+    for ev in evidence_rows:
+        if ev.fetch_status != FetchStatus.success or not ev.content_markdown:
+            continue
+        title = ev.title or "Public web evidence"
+        sig = Signal(
+            scan_id=scan.id,
+            account_id=account.id,
+            person_id=None,
+            signal_type=SignalType.other,
+            title=f"Live evidence: {title}"[:512],
+            summary=(ev.content_markdown[:280] + "...") if ev.content_markdown else None,
+            fact_text=None,
+            inference_text="Awaiting structured extraction (Phase 4 wires AI/ML).",
+            recommended_action="Re-run scan after AI/ML extraction is wired to score this signal.",
+            evidence_url=ev.url,
+            evidence_document_id=ev.id,
+            observed_at=today,
+            confidence=0.45,
+            recency_days=0,
+            metadata_json={"source": "live_placeholder", "fetch_method": as_str(ev.fetch_method)},
+        )
+        db.add(sig)
+        signals.append(sig)
+    db.flush()
+
+    events.aiml_call(
+        message=(
+            f"placeholder extraction over {len(evidence_rows)} documents "
+            "(Phase 4 will replace with live AI/ML)"
+        ),
+        phase=ScanStatus.extracting,
+        tool="placeholder_extractor",
+        signal_count=len(signals),
+        doc_count=len(evidence_rows),
     )
     return signals

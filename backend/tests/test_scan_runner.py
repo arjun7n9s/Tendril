@@ -220,12 +220,16 @@ def test_live_mode_proceeds_when_gate_open(
 
     get_settings.cache_clear()
 
+    # Stub run_scan so the BackgroundTask doesn't try to hit real Bright Data.
+    import app.api.scans as scans_api
+
+    monkeypatch.setattr(scans_api, "run_scan", lambda scan_id: None)
+
     create = client.post(
         f"/api/v1/accounts/{seeded_account}/scans",
         json={"mode": "live"},
     )
     assert create.status_code == 201
-    # The API does not coerce; Phase 2's runner will warn and process as mock.
     assert create.json()["mode"] == "live"
 
 
