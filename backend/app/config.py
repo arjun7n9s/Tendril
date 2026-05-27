@@ -1,0 +1,108 @@
+"""Application configuration loaded from environment variables.
+
+Secrets are loaded but never logged. Use `Settings.is_configured(...)` to
+expose configuration status without leaking values.
+"""
+
+from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Resolve the .env at the project root (one level above backend/).
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ENV_FILE = PROJECT_ROOT / ".env"
+
+
+class Settings(BaseSettings):
+    """Strongly-typed settings backed by `.env` at the project root."""
+
+    model_config = SettingsConfigDict(
+        env_file=str(ENV_FILE),
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    # App
+    app_env: str = Field(default="development")
+    database_url: str = Field(default="sqlite:///./signalgraph.db")
+    signalgraph_mock_mode: bool = Field(default=True)
+    cors_allowed_origins: str = Field(default="http://localhost:3000")
+
+    # Scan watchdog
+    signalgraph_scan_phase_timeout_seconds: int = Field(default=300)
+
+    # Bright Data REST
+    bright_data_api_key: str = Field(default="")
+    bright_data_api_endpoint: str = Field(default="https://api.brightdata.com/request")
+    bright_data_serp_zone: str = Field(default="")
+    bright_data_unlocker_zone: str = Field(default="")
+
+    # Bright Data Browser API
+    bright_data_browser_ws: str = Field(default="")
+    bright_data_browser_selenium_url: str = Field(default="")
+
+    # Bright Data MCP (optional / future)
+    bright_data_mcp_url: str = Field(default="")
+
+    # AI/ML API
+    aiml_api_key: str = Field(default="")
+    aiml_api_base_url: str = Field(default="https://api.aimlapi.com/v1")
+    aiml_extraction_model: str = Field(default="")
+    aiml_briefing_model: str = Field(default="")
+    aiml_draft_model: str = Field(default="")
+
+    # Cognee
+    cognee_api_key: str = Field(default="")
+    cognee_api_url: str = Field(default="")
+    cognee_dataset_prefix: str = Field(default="signalgraph")
+
+    # Optional integrations
+    triggerware_api_key: str = Field(default="")
+    speechmatics_api_key: str = Field(default="")
+
+    # ----- Helpers (no secret values exposed) -----
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_allowed_origins.split(",") if o.strip()]
+
+    def bright_data_rest_configured(self) -> bool:
+        return bool(
+            self.bright_data_api_key
+            and self.bright_data_api_endpoint
+            and self.bright_data_serp_zone
+            and self.bright_data_unlocker_zone
+        )
+
+    def bright_data_browser_configured(self) -> bool:
+        return bool(self.bright_data_browser_ws)
+
+    def aiml_configured(self) -> bool:
+        return bool(
+            self.aiml_api_key
+            and self.aiml_api_base_url
+            and self.aiml_extraction_model
+            and self.aiml_briefing_model
+            and self.aiml_draft_model
+        )
+
+    def cognee_configured(self) -> bool:
+        # Either hosted (api_key + url) or self-hosted is acceptable.
+        # For MVP, treat as not configured unless an api key is present.
+        return bool(self.cognee_api_key)
+
+    def triggerware_configured(self) -> bool:
+        return bool(self.triggerware_api_key)
+
+    def speechmatics_configured(self) -> bool:
+        return bool(self.speechmatics_api_key)
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()

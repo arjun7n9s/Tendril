@@ -1,0 +1,48 @@
+{
+  "_default": [
+    {
+      "signal_type": "hiring",
+      "title": "Hiring for data platform reliability",
+      "summary": "Multiple open roles target Kafka, Snowflake, and reliability for data pipelines.",
+      "fact_text": "Two careers postings - Senior Data Platform Engineer and Staff Engineer Data Reliability - explicitly require Kafka and Snowflake experience and emphasize reliability and observability work.",
+      "inference_text": "The team is investing in modernization of their data platform with reliability as a stated priority.",
+      "recommended_action": "Send an account-level note offering a reliability migration checklist and references from comparable fintech data teams.",
+      "evidence_url_key": "careers_senior_data_platform_engineer",
+      "observed_at_offset_days": -3,
+      "confidence": 0.84
+    },
+    {
+      "signal_type": "migration",
+      "title": "Active migration to dbt and Snowflake",
+      "summary": "Public engineering blog describes an ongoing migration to a Snowflake + dbt stack with new observability tooling.",
+      "fact_text": "Engineering blog post 'Our migration to Snowflake' describes cut runtimes, dbt standardization, and new data quality SLAs.",
+      "inference_text": "Migration timing aligns with our typical reliability and quality offering.",
+      "recommended_action": "Share a comparable case study from a current customer who completed a similar migration.",
+      "evidence_url_key": "engineering_migration_to_snowflake",
+      "observed_at_offset_days": -10,
+      "confidence": 0.78
+    },
+    {
+      "signal_type": "tech_stack",
+      "title": "Confirmed Kafka + Snowflake + dbt + Airflow",
+      "summary": "Multiple public sources confirm the data platform stack.",
+      "fact_text": "Engineering blog and GitHub repository both reference Kafka, Snowflake, dbt, and Airflow as the core data platform stack.",
+      "inference_text": "Strong fit with our ICP keywords and integration coverage.",
+      "recommended_action": "Tailor the technical narrative around Kafka + Snowflake reliability tooling.",
+      "evidence_url_key": "github_data_platform_tools",
+      "observed_at_offset_days": -7,
+      "confidence": 0.72
+    },
+    {
+      "signal_type": "product_launch",
+      "title": "Public launch of a finance data product",
+      "summary": "Press release describes a new finance-focused data product built on Kafka and Snowflake.",
+      "fact_text": "Press release announces a new product targeting finance and operations teams, built on streaming ingestion via Kafka and a serverless query layer over Snowflake.",
+      "inference_text": "Launch volume will increase pressure on data platform reliability and compliance audit trails.",
+      "recommended_action": "Reach out at the account level with a perspective on operational readiness for product launches.",
+      "evidence_url_key": "news_launches_data_product",
+      "observed_at_offset_days": -1,
+      "confidence": 0.66
+    }
+  ]
+}

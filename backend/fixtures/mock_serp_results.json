@@ -1,0 +1,67 @@
+{
+  "_default": {
+    "queries": [
+      {
+        "query": "{account_name} careers data platform Kafka Snowflake",
+        "results": [
+          {
+            "url": "https://{account_domain}/careers/senior-data-platform-engineer",
+            "title": "Senior Data Platform Engineer - {account_name} Careers",
+            "source_type": "careers",
+            "rank": 1
+          },
+          {
+            "url": "https://{account_domain}/careers/staff-engineer-data-reliability",
+            "title": "Staff Engineer, Data Reliability - {account_name}",
+            "source_type": "careers",
+            "rank": 2
+          }
+        ]
+      },
+      {
+        "query": "{account_name} engineering blog data infrastructure",
+        "results": [
+          {
+            "url": "https://{account_domain}/engineering/scaling-our-data-platform",
+            "title": "Scaling our data platform with Kafka and Snowflake",
+            "source_type": "blog",
+            "rank": 1
+          }
+        ]
+      },
+      {
+        "query": "{account_name} migration data platform",
+        "results": [
+          {
+            "url": "https://{account_domain}/engineering/our-migration-to-snowflake",
+            "title": "Our migration to Snowflake: lessons from the field",
+            "source_type": "blog",
+            "rank": 1
+          }
+        ]
+      },
+      {
+        "query": "site:github.com {account_name} data",
+        "results": [
+          {
+            "url": "https://github.com/{account_handle}/data-platform-tools",
+            "title": "{account_name} / data-platform-tools",
+            "source_type": "github",
+            "rank": 1
+          }
+        ]
+      },
+      {
+        "query": "{account_name} press release",
+        "results": [
+          {
+            "url": "https://news.example.com/{account_handle}-launches-data-product",
+            "title": "{account_name} launches new data product for finance teams",
+            "source_type": "news",
+            "rank": 1
+          }
+        ]
+      }
+    ]
+  }
+}
