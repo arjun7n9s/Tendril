@@ -44,6 +44,8 @@ from app.models.signal import Signal
 from app.models.source import Source
 from app.services.brightdata_client import BrightDataRestClient
 from app.services.briefing import generate_brief, generate_outreach
+from app.services.extractor import extract_signals_live
+from app.services.aiml_client import AimlClient, AimlNotConfiguredError
 from app.services.guardrails import check_outreach
 from app.services.memory_service import JsonlMemoryService, MemoryPacket
 from app.services.mock_fixtures import (
@@ -211,7 +213,9 @@ def _execute(db: Session, scan: Scan) -> None:
     events.phase_started(ScanStatus.extracting)
 
     if scan.mode == ScanMode.live:
-        signals = _placeholder_live_extract(db, scan, account, evidence_rows, events)
+        signals = asyncio.run(
+            _live_extract(db, scan, account, icp, evidence_rows, events)
+        )
     else:
         signals = _mock_extract(db, scan, account, evidence_rows, events)
     db.commit()
@@ -626,3 +630,35 @@ def _placeholder_live_extract(
         doc_count=len(evidence_rows),
     )
     return signals
+
+
+
+async def _live_extract(
+    db: Session,
+    scan: Scan,
+    account: Account,
+    icp,
+    evidence_rows: list[EvidenceDocument],
+    events: ScanEventLogger,
+) -> list[Signal]:
+    """Phase 4: AI/ML-backed extraction with placeholder fallback.
+
+    If AIML is not configured we fall back to the Phase 3 placeholder so
+    a misconfigured environment still produces a usable scan trace.
+    """
+    try:
+        async with AimlClient() as aiml:
+            return await extract_signals_live(
+                db,
+                scan=scan,
+                account=account,
+                icp=icp,
+                evidence_rows=evidence_rows,
+                aiml=aiml,
+                events=events,
+            )
+    except AimlNotConfiguredError:
+        events.warning(
+            "AIML not configured; falling back to placeholder extraction"
+        )
+        return _placeholder_live_extract(db, scan, account, evidence_rows, events)
