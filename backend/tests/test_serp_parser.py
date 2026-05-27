@@ -49,3 +49,41 @@ def test_falls_back_to_beautifulsoup_when_no_match() -> None:
 
 def test_handles_empty_html() -> None:
     assert parse_serp_html("") == []
+
+
+
+def test_parses_brightdata_json_organic() -> None:
+    payload = """{
+      "general": {"search_engine": "google"},
+      "organic": [
+        {"link": "https://acme.com/careers/eng", "title": "Engineer at Acme"},
+        {"link": "https://acme.com/blog", "title": "Acme blog"},
+        {"url": "https://github.com/acme/x", "title": "acme/x"}
+      ]
+    }"""
+    hits = parse_serp_html(payload)
+    urls = [h.url for h in hits]
+    assert "https://acme.com/careers/eng" in urls
+    assert "https://acme.com/blog" in urls
+    assert "https://github.com/acme/x" in urls
+    titles = [h.title for h in hits]
+    assert "Engineer at Acme" in titles
+
+
+def test_json_path_falls_back_to_html_when_organic_empty() -> None:
+    # JSON shape but organic is empty - we fall through to HTML parsers.
+    payload = '{"general": {"x": 1}, "organic": []}'
+    assert parse_serp_html(payload) == []
+
+
+def test_json_news_fields_are_picked_up() -> None:
+    payload = """{
+      "general": {"x": 1},
+      "news": [
+        {"link": "https://example.com/n1", "title": "N1"},
+        {"link": "https://example.com/n2", "title": "N2"}
+      ]
+    }"""
+    urls = [h.url for h in parse_serp_html(payload)]
+    assert "https://example.com/n1" in urls
+    assert "https://example.com/n2" in urls
