@@ -43,7 +43,14 @@ from app.models.score import Score
 from app.models.signal import Signal
 from app.models.source import Source
 from app.services.brightdata_client import BrightDataRestClient
-from app.services.briefing import generate_brief, generate_outreach
+from app.services.briefing import (
+    BriefDraft,
+    OutreachDraftPayload,
+    generate_brief,
+    generate_brief_live,
+    generate_outreach,
+    generate_outreach_live,
+)
 from app.services.extractor import extract_signals_live
 from app.services.aiml_client import AimlClient, AimlNotConfiguredError
 from app.services.guardrails import check_outreach
@@ -285,7 +292,14 @@ def _execute(db: Session, scan: Scan) -> None:
     _commit_phase(db, scan, ScanStatus.briefing, _percent_for_phase(ScanStatus.briefing))
     events.phase_started(ScanStatus.briefing)
 
-    brief = generate_brief(account, signals, score_row)
+    if scan.mode == ScanMode.live:
+        brief, brief_telemetry = asyncio.run(
+            _live_brief(account, signals, score_row, events)
+        )
+    else:
+        brief = generate_brief(account, signals, score_row)
+        brief_telemetry = {"model": "mock", "duration_ms": 0, "fallback": False}
+
     brief_row = Brief(
         scan_id=scan.id,
         account_id=account.id,
@@ -298,10 +312,26 @@ def _execute(db: Session, scan: Scan) -> None:
     )
     db.add(brief_row)
     db.flush()
+    if scan.mode == ScanMode.live:
+        events.aiml_call(
+            message=f"brief generated via {brief_telemetry.get('model') or 'fallback'}",
+            phase=ScanStatus.briefing,
+            tool="aiml_briefer",
+            model=brief_telemetry.get("model"),
+            duration_ms=brief_telemetry.get("duration_ms"),
+            fallback=brief_telemetry.get("fallback", False),
+        )
 
     if scoring.sales_ready and signals:
         top_signal = max(signals, key=lambda s: s.confidence)
-        outreach = generate_outreach(account, brief, top_signal)
+        if scan.mode == ScanMode.live:
+            outreach, draft_telemetry = asyncio.run(
+                _live_outreach(account, signals, top_signal, events)
+            )
+        else:
+            outreach = generate_outreach(account, brief, top_signal)
+            draft_telemetry = {"model": "mock", "duration_ms": 0, "fallback": False}
+
         gr = check_outreach(
             subject=outreach.subject,
             body=outreach.body,
@@ -319,6 +349,15 @@ def _execute(db: Session, scan: Scan) -> None:
             guardrail_notes_json=gr.notes,
         )
         db.add(draft)
+        if scan.mode == ScanMode.live:
+            events.aiml_call(
+                message=f"outreach draft generated via {draft_telemetry.get('model') or 'fallback'}",
+                phase=ScanStatus.briefing,
+                tool="aiml_drafter",
+                model=draft_telemetry.get("model"),
+                duration_ms=draft_telemetry.get("duration_ms"),
+                fallback=draft_telemetry.get("fallback", False),
+            )
         events.info("outreach draft created", guardrail_notes=gr.notes, ok=gr.ok)
     else:
         events.info(
@@ -662,3 +701,65 @@ async def _live_extract(
             "AIML not configured; falling back to placeholder extraction"
         )
         return _placeholder_live_extract(db, scan, account, evidence_rows, events)
+
+
+
+async def _live_brief(
+    account: Account,
+    signals: list[Signal],
+    score_row: Score,
+    events: ScanEventLogger,
+) -> tuple[BriefDraft, dict]:
+    """Generate brief via AIML; fall back to deterministic on misconfig."""
+    try:
+        async with AimlClient() as aiml:
+            return await generate_brief_live(
+                aiml=aiml,
+                account=account,
+                signals=signals,
+                score=score_row,
+                graph_context="",
+            )
+    except AimlNotConfiguredError:
+        events.warning("AIML not configured; using deterministic brief")
+        return generate_brief(account, signals, score_row), {
+            "model": "fallback",
+            "duration_ms": 0,
+            "fallback": True,
+        }
+
+
+async def _live_outreach(
+    account: Account,
+    signals: list[Signal],
+    top_signal: Signal,
+    events: ScanEventLogger,
+) -> tuple[OutreachDraftPayload, dict]:
+    """Generate outreach via AIML; fall back to deterministic on misconfig."""
+    try:
+        async with AimlClient() as aiml:
+            return await generate_outreach_live(
+                aiml=aiml,
+                account=account,
+                signals=signals,
+                top_signal=top_signal,
+            )
+    except AimlNotConfiguredError:
+        events.warning("AIML not configured; using deterministic outreach")
+        # Build a transient brief just to call the deterministic outreach helper.
+        from app.services.briefing import _MinimalScore  # noqa: WPS437
+
+        fallback_score = _MinimalScore(
+            total_score=70,
+            fit_score=15,
+            timing_score=15,
+            relationship_score=10,
+            evidence_score=10,
+            sales_ready=True,
+        )
+        brief = generate_brief(account, signals, fallback_score)
+        return generate_outreach(account, brief, top_signal), {
+            "model": "fallback",
+            "duration_ms": 0,
+            "fallback": True,
+        }
