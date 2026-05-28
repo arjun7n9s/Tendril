@@ -30,7 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/imports", label: "Imports", icon: Upload, mvp: true },
   { href: "/signals", label: "Signal feed", icon: Activity, mvp: true },
   { href: "/scans", label: "Live scans", icon: Radar, mvp: true },
-  { href: "/settings", label: "Settings", icon: Settings, mvp: false, comingSoon: true },
+  { href: "/settings", label: "Settings", icon: Settings, mvp: true },
 ];
 
 export function Sidebar() {

@@ -14,7 +14,7 @@ const NAV = [
   { href: "/imports", label: "Imports", icon: Upload },
   { href: "/signals", label: "Signal feed", icon: Activity },
   { href: "/scans", label: "Live scans", icon: Radar },
-  { href: "/settings", label: "Settings", icon: Settings, disabled: true },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function MobileNav() {
@@ -49,19 +49,6 @@ export function MobileNav() {
             {NAV.map((item) => {
               const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
               const Icon = item.icon;
-              if (item.disabled) {
-                return (
-                  <li key={item.href}>
-                    <span className="flex items-center justify-between rounded-[var(--radius-button)] px-2.5 py-2 text-[13px] text-[color:var(--color-fg-muted)]">
-                      <span className="inline-flex items-center gap-2">
-                        <Icon className="size-4" aria-hidden />
-                        {item.label}
-                      </span>
-                      <span className="text-[10px] tracking-[0.04em] uppercase">Soon</span>
-                    </span>
-                  </li>
-                );
-              }
               return (
                 <li key={item.href}>
                   <Link
