@@ -38,7 +38,9 @@ export function TopCommandBar({ title, subtitle, primaryAction, meta }: TopComma
               "hidden md:inline-flex h-8 items-center gap-2 rounded-[var(--radius-button)] border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] px-2.5 text-[12px] text-[color:var(--color-fg-muted)]",
               "hover:bg-[color:var(--color-raised)]",
             )}
-            aria-label="Search accounts, signals, evidence (coming soon)"
+            aria-label="Search (coming soon)"
+            aria-disabled
+            tabIndex={-1}
             disabled
           >
             <Search className="size-3.5" aria-hidden />

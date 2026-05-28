@@ -49,6 +49,8 @@ function Inner({ account, signals, brief }: AccountKnowledgeGraphProps) {
 
   return (
     <div
+      role="figure"
+      aria-label={`Knowledge graph for ${account.name}`}
       className="rounded-[var(--radius-card)] border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] shadow-[var(--shadow-flat)]"
       style={{ height: 540 }}
     >
