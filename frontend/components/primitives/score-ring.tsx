@@ -54,6 +54,12 @@ export function ScoreRing({
       className={cn("relative inline-flex items-center justify-center", className)}
       style={{ width: size, height: size }}
     >
+      {/* Soft glowing ambient halo behind the score ring for high-priority tiers */}
+      {tier === "sales-ready" ? (
+        <div className="absolute inset-0 -z-10 rounded-full bg-signal-soft/70 blur-[10px] animate-pulse" />
+      ) : tier === "near-miss" ? (
+        <div className="absolute inset-0 -z-10 rounded-full bg-evidence-soft/60 blur-[8px]" />
+      ) : null}
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
         <circle
           cx={size / 2}

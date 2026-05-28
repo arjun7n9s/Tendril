@@ -101,26 +101,27 @@ export function AccountTable({ rows, isLoading }: AccountTableProps) {
               <tr
                 key={account.id}
                 className={cn(
-                  "group cursor-pointer border-b border-[color:var(--color-border-default)] last:border-b-0 hover:bg-[color:var(--color-canvas)]",
-                  idx % 2 === 1 && "bg-[color:var(--color-surface)]",
+                  "group cursor-pointer border-b border-border/30 last:border-b-0 transition-all duration-200 ease-out",
+                  "hover:bg-surface/85 hover:shadow-flat hover:scale-[1.001]",
+                  idx % 2 === 1 ? "bg-surface/40" : "bg-transparent",
                 )}
               >
                 <td className="px-4 py-2.5">
                   <Link
                     href={`/accounts/${account.id}`}
-                    className="inline-flex items-center gap-2.5 text-[color:var(--color-fg-primary)]"
+                    className="inline-flex items-center gap-2.5 text-fg-primary"
                   >
                     <MonogramTile name={account.name} seed={account.id} size="md" />
                     <span className="flex flex-col">
                       <span className="font-medium">{account.name}</span>
                       {account.domain ? (
-                        <span className="text-[12px] text-[color:var(--color-fg-muted)]">
+                        <span className="text-[11.5px] text-fg-muted">
                           {account.domain}
                         </span>
                       ) : null}
                     </span>
                     <ArrowUpRight
-                      className="ml-1 size-3.5 text-[color:var(--color-fg-muted)] opacity-0 transition-opacity group-hover:opacity-100"
+                      className="ml-1.5 size-3.5 text-fg-muted opacity-0 -translate-x-0.5 translate-y-0.5 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0"
                       aria-hidden
                     />
                   </Link>

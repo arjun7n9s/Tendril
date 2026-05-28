@@ -51,7 +51,7 @@ function Inner({ account, signals, brief }: AccountKnowledgeGraphProps) {
     <div
       role="figure"
       aria-label={`Knowledge graph for ${account.name}`}
-      className="rounded-[var(--radius-card)] border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] shadow-[var(--shadow-flat)]"
+      className="rounded-[var(--radius-card)] border border-border/40 bg-surface/40 backdrop-blur-md shadow-flat relative overflow-hidden transition-all duration-300 hover:shadow-raised hover:border-border/60"
       style={{ height: 540 }}
     >
       <ReactFlow
@@ -81,20 +81,20 @@ function Inner({ account, signals, brief }: AccountKnowledgeGraphProps) {
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={16}
+          gap={18}
           size={1}
-          color="var(--color-border-default)"
+          color="rgba(106, 112, 116, 0.15)"
         />
         <Controls
           position="bottom-right"
           showInteractive={false}
-          className="rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] text-[color:var(--color-fg-secondary)]"
+          className="!rounded-md !border !border-border/40 !bg-surface/80 !backdrop-blur-md !text-fg-secondary !shadow-flat"
         />
         <MiniMap
           pannable
           zoomable
-          className="rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)]"
-          maskColor="rgba(247, 248, 246, 0.7)"
+          className="!rounded-md !border !border-border/40 !bg-surface/80 !backdrop-blur-md !shadow-flat"
+          maskColor="rgba(247, 248, 246, 0.4)"
           nodeColor={(node) => {
             const data = node.data as GraphNodeData | undefined;
             switch (data?.kind) {

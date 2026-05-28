@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 
 import { QueryProvider } from "@/lib/providers/query-provider";
+import { ThemeProvider } from "@/lib/providers/theme-provider";
 import { cn } from "@/lib/utils/cn";
 
 import "./globals.css";
@@ -67,8 +68,15 @@ export default function RootLayout({
       className={cn(inter.variable, jetbrainsMono.variable, "h-full")}
       suppressHydrationWarning
     >
-      <body className="bg-canvas text-fg-primary min-h-full antialiased">
-        <QueryProvider>{children}</QueryProvider>
+      <body className="bg-canvas text-fg-primary min-h-full antialiased relative">
+        {/* Dynamic moving ambient background gradients */}
+        <div className="pointer-events-none fixed inset-0 -z-50 overflow-hidden bg-canvas">
+          <div className="absolute -top-[35%] -left-[15%] h-[75%] w-[75%] rounded-full bg-gradient-to-br from-signal-soft/45 to-cobalt-soft/35 blur-[120px] animate-aurora-slow" />
+          <div className="absolute -bottom-[35%] -right-[15%] h-[75%] w-[75%] rounded-full bg-gradient-to-tr from-graph-soft/35 to-cobalt-soft/45 blur-[120px] animate-aurora-slower" />
+        </div>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <QueryProvider>{children}</QueryProvider>
+        </ThemeProvider>
         <Toaster
           position="bottom-right"
           closeButton

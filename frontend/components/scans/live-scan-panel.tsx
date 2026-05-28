@@ -71,15 +71,16 @@ export function LiveScanPanel({ open, onOpenChange, accountId, scanId }: LiveSca
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-[520px]">
+      <SheetContent side="right" className="w-full sm:max-w-[520px] bg-surface/80 backdrop-blur-xl border-l border-border/30">
         <SheetHeader>
           <div className="flex items-start gap-3">
-            <span className="grid size-8 shrink-0 place-items-center rounded-md bg-[color:var(--color-cobalt-soft)] text-[color:var(--color-cobalt)]">
-              <Radar className="size-4" aria-hidden />
+            <span className="relative grid size-8 shrink-0 place-items-center rounded-md bg-cobalt-soft/70 text-cobalt border border-cobalt/20">
+              <Radar className="size-4 animate-[spin_8s_linear_infinite]" aria-hidden />
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-cobalt shadow-[0_0_6px_rgba(52,87,213,0.6)] animate-pulse" />
             </span>
             <div className="flex-1">
-              <SheetTitle>Live scan</SheetTitle>
-              <SheetDescription>
+              <SheetTitle className="text-[15px] tracking-[-0.01em]">Live scan</SheetTitle>
+              <SheetDescription className="text-[11.5px] text-fg-muted">
                 Bright Data discovers public sources, AI/ML extracts signals, and Cognee writes
                 memory.
               </SheetDescription>
@@ -90,9 +91,11 @@ export function LiveScanPanel({ open, onOpenChange, accountId, scanId }: LiveSca
         <div className="flex-1 overflow-y-auto p-5">
           <PanelBody scan={scan} />
 
-          <section className="mt-5 flex flex-col gap-2">
-            <h3 className="text-[11px] font-semibold tracking-[0.04em] uppercase text-[color:var(--color-fg-secondary)]">
+          <section className="mt-5 flex flex-col gap-2.5">
+            <h3 className="text-[10.5px] font-semibold tracking-[0.05em] uppercase text-fg-secondary flex items-center gap-2">
+              <span className="h-px flex-1 bg-border/40" />
               Sources
+              <span className="h-px flex-1 bg-border/40" />
             </h3>
             <ScanSourceStream
               sources={sourcesQuery.data ?? []}
@@ -101,24 +104,26 @@ export function LiveScanPanel({ open, onOpenChange, accountId, scanId }: LiveSca
             />
           </section>
 
-          <section className="mt-5 flex flex-col gap-2">
-            <h3 className="text-[11px] font-semibold tracking-[0.04em] uppercase text-[color:var(--color-fg-secondary)]">
+          <section className="mt-5 flex flex-col gap-2.5">
+            <h3 className="text-[10.5px] font-semibold tracking-[0.05em] uppercase text-fg-secondary flex items-center gap-2">
+              <span className="h-px flex-1 bg-border/40" />
               Event log
+              <span className="h-px flex-1 bg-border/40" />
             </h3>
             <ScanEventList events={eventsQuery.data?.items ?? []} isLoading={eventsQuery.isLoading} />
           </section>
         </div>
 
-        <div className="border-t border-[color:var(--color-border-default)] px-5 py-3">
+        <div className="border-t border-border/30 bg-surface/50 px-5 py-3 backdrop-blur-sm">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] tracking-[0.04em] uppercase text-[color:var(--color-fg-muted)]">
+            <span className="text-[10.5px] font-medium tracking-[0.04em] uppercase text-fg-muted">
               {scan
                 ? `Mode · ${scan.mode}`
                 : scanId
                   ? "Connecting…"
                   : "No scan running"}
             </span>
-            <Button variant="secondary" size="sm" onClick={() => onOpenChange(false)}>
+            <Button variant="secondary" size="sm" className="border border-border/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200" onClick={() => onOpenChange(false)}>
               Close
             </Button>
           </div>
@@ -161,17 +166,20 @@ function PanelBody({ scan }: { scan: ScanRead | null }) {
         <MetricTile label="Signals" value={counts.signals} hint="extracted" />
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[11px] tracking-[0.04em] uppercase text-[color:var(--color-fg-secondary)]">
-          Integrations
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[10.5px] font-semibold tracking-[0.05em] uppercase text-fg-secondary">
+          Pipelines
         </span>
-        <span className="inline-flex items-center gap-1 rounded-[var(--radius-chip)] border border-[color:color-mix(in_oklab,var(--color-cobalt)_25%,transparent)] bg-[color:var(--color-cobalt-soft)] px-1.5 py-0.5 text-[11px] text-[color:var(--color-cobalt)]">
+        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-cobalt/20 bg-cobalt-soft/60 px-2 py-0.5 text-[11px] font-medium text-cobalt transition-all duration-300 hover:border-cobalt/40 hover:shadow-glow-cobalt">
+          <span className="relative flex h-1.5 w-1.5 shrink-0"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cobalt opacity-60"></span><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cobalt"></span></span>
           Bright Data · {counts.bright_data_calls}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-[var(--radius-chip)] border border-[color:color-mix(in_oklab,var(--color-cobalt)_25%,transparent)] bg-[color:var(--color-cobalt-soft)] px-1.5 py-0.5 text-[11px] text-[color:var(--color-cobalt)]">
+        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-cobalt/20 bg-cobalt-soft/60 px-2 py-0.5 text-[11px] font-medium text-cobalt transition-all duration-300 hover:border-cobalt/40 hover:shadow-glow-cobalt">
+          <span className="relative flex h-1.5 w-1.5 shrink-0"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cobalt opacity-60"></span><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cobalt"></span></span>
           AI/ML · {counts.aiml_calls}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-[var(--radius-chip)] border border-[color:color-mix(in_oklab,var(--color-graph)_25%,transparent)] bg-[color:var(--color-graph-soft)] px-1.5 py-0.5 text-[11px] text-[color:var(--color-graph)]">
+        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-graph/20 bg-graph-soft/60 px-2 py-0.5 text-[11px] font-medium text-graph transition-all duration-300 hover:border-graph/40">
+          <span className="relative flex h-1.5 w-1.5 shrink-0"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-graph opacity-60"></span><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-graph"></span></span>
           Memory · {counts.memory_writes}
         </span>
       </div>
@@ -213,19 +221,19 @@ function ResultBanner({
   const reduce = useReducedMotion();
   const palette =
     tone === "signal"
-      ? "border-[color:color-mix(in_oklab,var(--color-signal)_30%,transparent)] bg-[color:var(--color-signal-soft)] text-[color:var(--color-signal)]"
-      : "border-[color:color-mix(in_oklab,var(--color-risk)_30%,transparent)] bg-[color:var(--color-risk-soft)] text-[color:var(--color-risk)]";
+      ? "border-signal/30 bg-signal-soft/70 text-signal shadow-glow-emerald"
+      : "border-risk/30 bg-risk-soft/70 text-risk";
   return (
     <motion.div
-      initial={reduce ? false : { opacity: 0, y: 6, scale: 0.98 }}
+      initial={reduce ? false : { opacity: 0, y: 8, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
         type: "spring",
-        stiffness: 320,
-        damping: 28,
-        mass: 0.6,
+        stiffness: 280,
+        damping: 24,
+        mass: 0.5,
       }}
-      className={`flex items-center gap-3 rounded-[var(--radius-card)] border p-3 ${palette}`}
+      className={`flex items-center gap-3 rounded-[var(--radius-card)] border p-4 backdrop-blur-sm ${palette}`}
     >
       {children}
     </motion.div>

@@ -76,6 +76,39 @@
   --color-input: var(--color-border-default);
   --color-ring: var(--color-signal);
   --radius: var(--radius-card);
+
+  /* Drifting aurora background animations & premium custom properties */
+  --animate-aurora-slow: aurora-slow 35s infinite alternate ease-in-out;
+  --animate-aurora-slower: aurora-slower 45s infinite alternate ease-in-out;
+  --shadow-glow-emerald: 0 0 20px rgba(12, 124, 86, 0.12);
+  --shadow-glow-cobalt: 0 0 20px rgba(52, 87, 213, 0.12);
+  --shadow-glow-amber: 0 0 20px rgba(153, 95, 23, 0.12);
+
+  @keyframes aurora-slow {
+    0% {
+      transform: translate(0px, 0px) rotate(0deg) scale(1);
+    }
+    33% {
+      transform: translate(40px, -50px) rotate(120deg) scale(1.04);
+    }
+    66% {
+      transform: translate(-30px, 30px) rotate(240deg) scale(0.96);
+    }
+    100% {
+      transform: translate(0px, 0px) rotate(360deg) scale(1);
+    }
+  }
+  @keyframes aurora-slower {
+    0% {
+      transform: translate(0px, 0px) rotate(0deg) scale(1);
+    }
+    50% {
+      transform: translate(-50px, 40px) rotate(-180deg) scale(1.06);
+    }
+    100% {
+      transform: translate(0px, 0px) rotate(-360deg) scale(1);
+    }
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -83,6 +116,50 @@
    ---------------------------------------------------------------------- */
 
 @layer base {
+  .dark {
+    --color-canvas: #090b0c;
+    --color-surface: #0f1315;
+    --color-raised: #171c1e;
+
+    --color-fg-primary: #f0f3f4;
+    --color-fg-secondary: #9faeb6;
+    --color-fg-muted: #75858f;
+
+    --color-border-default: #22282b;
+    --color-border-strong: #31393d;
+
+    --color-signal: #10b981;
+    --color-signal-soft: rgba(16, 185, 129, 0.12);
+    --color-cobalt: #6366f1;
+    --color-cobalt-soft: rgba(99, 102, 241, 0.12);
+    --color-evidence: #f59e0b;
+    --color-evidence-soft: rgba(245, 158, 11, 0.12);
+    --color-risk: #f43f5e;
+    --color-risk-soft: rgba(244, 63, 94, 0.12);
+    --color-graph: #06b6d4;
+    --color-graph-soft: rgba(6, 182, 212, 0.12);
+
+    --color-background: var(--color-canvas);
+    --color-foreground: var(--color-fg-primary);
+    --color-card: var(--color-surface);
+    --color-card-foreground: var(--color-fg-primary);
+    --color-popover: var(--color-surface);
+    --color-popover-foreground: var(--color-fg-primary);
+    --color-primary: var(--color-fg-primary);
+    --color-primary-foreground: var(--color-surface);
+    --color-secondary: var(--color-raised);
+    --color-secondary-foreground: var(--color-fg-primary);
+    --color-muted: var(--color-raised);
+    --color-muted-foreground: var(--color-fg-secondary);
+    --color-accent: var(--color-signal-soft);
+    --color-accent-foreground: var(--color-signal);
+    --color-destructive: var(--color-risk);
+    --color-destructive-foreground: var(--color-surface);
+    --color-border: var(--color-border-default);
+    --color-input: var(--color-border-default);
+    --color-ring: var(--color-signal);
+  }
+
   *,
   ::before,
   ::after {
@@ -228,6 +305,60 @@
   text-align: left;
 }
 
+/* ----------------------------------------------------------------------
+   React Flow Premium Polish
+   ---------------------------------------------------------------------- */
+
+.react-flow__edge-path {
+  stroke-dasharray: 6 6;
+  animation: react-flow-dash 30s linear infinite;
+  stroke: var(--color-border-strong);
+  opacity: 0.75;
+  transition: stroke 0.3s, stroke-width 0.3s, opacity 0.3s;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--color-cobalt);
+  stroke-width: 2px;
+  opacity: 1;
+}
+
+@keyframes react-flow-dash {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.react-flow__controls {
+  box-shadow: var(--shadow-raised) !important;
+  border: 1px solid var(--color-border-default) !important;
+  border-radius: var(--radius-card) !important;
+  overflow: hidden;
+  background: var(--color-surface) !important;
+}
+
+.react-flow__controls-button {
+  background: var(--color-surface) !important;
+  color: var(--color-fg-secondary) !important;
+  border-bottom: 1px solid var(--color-border-default) !important;
+  transition: background 0.2s, color 0.2s;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--color-raised) !important;
+  color: var(--color-fg-primary) !important;
+}
+
+.react-flow__minimap {
+  border-radius: var(--radius-card) !important;
+  border: 1px solid var(--color-border-default) !important;
+  box-shadow: var(--shadow-raised) !important;
+  background: var(--color-surface) !important;
+}
+
 /* Reduced motion: disable Framer/CSS transitions except quick fades */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -239,3 +370,4 @@
     scroll-behavior: auto !important;
   }
 }
+

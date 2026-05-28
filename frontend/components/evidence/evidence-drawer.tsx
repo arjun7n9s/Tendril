@@ -78,12 +78,12 @@ export function EvidenceDrawer({ subject, onOpenChange }: EvidenceDrawerProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-[560px]">
+      <SheetContent side="right" className="w-full sm:max-w-[560px] bg-surface/80 backdrop-blur-xl border-l border-border/30">
         <SheetHeader>
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-col gap-1">
-              <SheetTitle>{COPY.evidence.drawerTitle}</SheetTitle>
-              <SheetDescription>
+              <SheetTitle className="text-[15px] tracking-[-0.01em]">{COPY.evidence.drawerTitle}</SheetTitle>
+              <SheetDescription className="text-[11.5px] text-fg-muted">
                 Public source evidence used to support this signal.
               </SheetDescription>
             </div>
@@ -92,7 +92,7 @@ export function EvidenceDrawer({ subject, onOpenChange }: EvidenceDrawerProps) {
 
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
           <header className="flex flex-col gap-2">
-            <h3 className="text-[14px] leading-snug font-semibold text-[color:var(--color-fg-primary)]">
+            <h3 className="text-[14px] leading-snug font-semibold text-fg-primary tracking-[-0.01em]">
               {title || "Untitled source"}
             </h3>
             <div className="flex flex-wrap items-center gap-2">
@@ -100,61 +100,63 @@ export function EvidenceDrawer({ subject, onOpenChange }: EvidenceDrawerProps) {
                 href={url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 break-all text-[12px] text-[color:var(--color-fg-secondary)] hover:text-[color:var(--color-fg-primary)]"
+                className="group/link inline-flex items-center gap-1.5 break-all text-[12px] text-fg-secondary transition-colors hover:text-fg-primary"
               >
                 {host}
-                <ExternalLink className="size-3" aria-hidden />
+                <ExternalLink className="size-3 opacity-0 -translate-x-0.5 translate-y-0.5 transition-all duration-200 group-hover/link:opacity-100 group-hover/link:translate-x-0 group-hover/link:translate-y-0" aria-hidden />
               </a>
               {url ? <CopyButton value={url} label="Copy URL" /> : null}
             </div>
           </header>
 
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             {evidence?.fetch_method ? (
-              <span className="inline-flex items-center gap-1 text-[11px] text-[color:var(--color-fg-secondary)]">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-fg-secondary">
                 {COPY.evidence.fetchedVia}
                 <FetchMethodBadge method={evidence.fetch_method} />
               </span>
             ) : null}
             {evidence?.fetched_at ? (
               <span
-                className="text-[11px] text-[color:var(--color-fg-muted)]"
+                className="text-[11px] text-fg-muted tabular-nums"
                 title={formatAbsolute(evidence.fetched_at)}
               >
                 {formatRelative(evidence.fetched_at)}
               </span>
             ) : null}
             {evidence?.http_status ? (
-              <Badge variant="outline" size="sm">
+              <Badge variant="outline" size="sm" className="font-semibold">
                 HTTP {evidence.http_status}
               </Badge>
             ) : null}
           </div>
 
           {subject?.kind === "signal" ? (
-            <section className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-default)] bg-[color:var(--color-canvas)] p-3">
-              <span className="text-[11px] tracking-[0.04em] uppercase text-[color:var(--color-fg-secondary)]">
+            <section className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-border/40 bg-canvas/70 p-3.5 backdrop-blur-sm">
+              <span className="text-[10.5px] font-semibold tracking-[0.05em] uppercase text-fg-secondary">
                 Signal
               </span>
               {subject.signal.fact_text ? (
-                <p className="text-[13px] leading-relaxed text-[color:var(--color-fg-primary)]">
+                <p className="text-[13px] leading-relaxed text-fg-primary">
                   {subject.signal.fact_text}
                 </p>
               ) : null}
               {subject.signal.inference_text ? (
-                <p className="text-[12px] leading-relaxed text-[color:var(--color-fg-secondary)]">
-                  <span className="font-medium text-[color:var(--color-evidence)]">Inference. </span>
+                <p className="text-[12px] leading-relaxed text-fg-secondary">
+                  <span className="font-semibold text-evidence">Inference · </span>
                   {subject.signal.inference_text}
                 </p>
               ) : null}
             </section>
           ) : null}
 
-          <section className="flex flex-col gap-2">
-            <span className="text-[11px] tracking-[0.04em] uppercase text-[color:var(--color-fg-secondary)]">
+          <section className="flex flex-col gap-2.5">
+            <span className="text-[10.5px] font-semibold tracking-[0.05em] uppercase text-fg-secondary flex items-center gap-2">
+              <span className="h-px flex-1 bg-border/40" />
               Source content
+              <span className="h-px flex-1 bg-border/40" />
             </span>
-            <ScrollArea className="max-h-[420px] rounded-[var(--radius-card)] border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] p-3">
+            <ScrollArea className="max-h-[420px] rounded-[var(--radius-card)] border border-border/40 bg-surface/60 p-4 backdrop-blur-sm">
               {evidenceQuery.isLoading && !evidence ? (
                 <div className="flex flex-col gap-2">
                   <Skeleton className="h-3 w-full" />
@@ -168,7 +170,7 @@ export function EvidenceDrawer({ subject, onOpenChange }: EvidenceDrawerProps) {
                   </ReactMarkdown>
                 </div>
               ) : (
-                <p className="text-[12px] text-[color:var(--color-fg-muted)]">
+                <p className="text-[12px] text-fg-muted">
                   No cached content. Open the original source for the full page.
                 </p>
               )}
@@ -178,16 +180,16 @@ export function EvidenceDrawer({ subject, onOpenChange }: EvidenceDrawerProps) {
 
         <SheetFooter>
           <div className="flex w-full items-center justify-between gap-2">
-            <span className="text-[11px] tracking-[0.04em] uppercase text-[color:var(--color-fg-muted)]">
+            <span className="text-[10.5px] font-medium tracking-[0.04em] uppercase text-fg-muted">
               {evidence?.fetch_status === "failed" ? "Fetch failed" : "Read-only preview"}
             </span>
             <div className="flex items-center gap-2">
-              <Button asChild variant="secondary" size="sm">
+              <Button asChild variant="secondary" size="sm" className="border border-border/50 font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                 <a href={url} target="_blank" rel="noreferrer">
                   <span>{COPY.evidence.openOriginal}</span>
                 </a>
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              <Button variant="ghost" size="sm" className="hover:scale-[1.02] active:scale-[0.98] transition-all duration-200" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
             </div>

@@ -1,7 +1,5 @@
 "use client";
 
-import { CheckCircle2, CircleDashed } from "lucide-react";
-
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useHealth } from "@/lib/hooks/use-health";
 import type { HealthResponse, IntegrationFlag } from "@/lib/types";
@@ -39,16 +37,19 @@ export function IntegrationStatus() {
                 <TooltipTrigger asChild>
                   <span
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-[var(--radius-chip)] border px-1.5 py-0.5 text-[11px] font-medium tracking-[0.01em]",
+                      "inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border px-2 py-0.5 text-[11px] font-medium tracking-[0.01em] transition-all duration-300 ease-out",
                       configured
-                        ? "border-[color:color-mix(in_oklab,var(--color-signal)_30%,transparent)] bg-[color:var(--color-signal-soft)] text-[color:var(--color-signal)]"
-                        : "border-[color:var(--color-border-default)] bg-[color:var(--color-raised)] text-[color:var(--color-fg-muted)]",
+                        ? "border-signal/30 bg-signal-soft/70 text-signal shadow-flat shadow-glow-emerald/5 hover:border-signal/50"
+                        : "border-border/60 bg-raised/60 text-fg-muted",
                     )}
                   >
                     {configured ? (
-                      <CheckCircle2 className="size-3" aria-hidden />
+                      <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-signal opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-signal"></span>
+                      </span>
                     ) : (
-                      <CircleDashed className="size-3" aria-hidden />
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-fg-muted/40" aria-hidden />
                     )}
                     {label}
                   </span>

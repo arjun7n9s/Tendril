@@ -12,39 +12,39 @@ const KIND_STYLES: Record<
 > = {
   account: {
     container:
-      "bg-[color:var(--color-fg-primary)] text-[color:var(--color-surface)] border border-[color:var(--color-fg-primary)]",
+      "bg-fg-primary/95 text-surface border border-fg-primary/20 shadow-md",
     icon: Building2,
-    iconClass: "text-[color:var(--color-surface)]",
+    iconClass: "text-surface",
   },
   signal: {
     container:
-      "bg-[color:var(--color-cobalt-soft)] text-[color:var(--color-cobalt)] border border-[color:color-mix(in_oklab,var(--color-cobalt)_30%,transparent)]",
+      "bg-cobalt-soft/80 backdrop-blur-md text-cobalt border border-cobalt/25 shadow-glow-cobalt",
     icon: Radar,
-    iconClass: "text-[color:var(--color-cobalt)]",
+    iconClass: "text-cobalt",
   },
   evidence: {
     container:
-      "bg-[color:var(--color-evidence-soft)] text-[color:var(--color-evidence)] border border-[color:color-mix(in_oklab,var(--color-evidence)_30%,transparent)]",
+      "bg-evidence-soft/80 backdrop-blur-md text-evidence border border-evidence/25 shadow-glow-amber",
     icon: FileSearch,
-    iconClass: "text-[color:var(--color-evidence)]",
+    iconClass: "text-evidence",
   },
   tech: {
     container:
-      "bg-[color:var(--color-graph-soft)] text-[color:var(--color-graph)] border border-[color:color-mix(in_oklab,var(--color-graph)_30%,transparent)]",
+      "bg-graph-soft/80 backdrop-blur-md text-graph border border-graph/25",
     icon: Cpu,
-    iconClass: "text-[color:var(--color-graph)]",
+    iconClass: "text-graph",
   },
   competitor: {
     container:
-      "bg-[color:var(--color-risk-soft)] text-[color:var(--color-risk)] border border-[color:color-mix(in_oklab,var(--color-risk)_30%,transparent)]",
+      "bg-risk-soft/80 backdrop-blur-md text-risk border border-risk/25",
     icon: Crosshair,
-    iconClass: "text-[color:var(--color-risk)]",
+    iconClass: "text-risk",
   },
   icp: {
     container:
-      "bg-[color:var(--color-signal-soft)] text-[color:var(--color-signal)] border border-[color:color-mix(in_oklab,var(--color-signal)_30%,transparent)]",
+      "bg-signal-soft/80 backdrop-blur-md text-signal border border-signal/25 shadow-glow-emerald",
     icon: Target,
-    iconClass: "text-[color:var(--color-signal)]",
+    iconClass: "text-signal",
   },
 };
 
@@ -62,13 +62,13 @@ export function TendrilGraphNode({ data }: NodeProps) {
     <Wrapper
       {...wrapperProps}
       className={cn(
-        "flex max-w-[200px] items-start gap-2 rounded-[var(--radius-card)] px-2.5 py-2 shadow-[var(--shadow-flat)]",
+        "flex max-w-[200px] items-start gap-2 rounded-[var(--radius-card)] px-2.5 py-2 transition-all duration-300 ease-out hover:scale-[1.03]",
         style.container,
-        node.href ? "hover:shadow-[var(--shadow-raised)]" : "",
+        node.href ? "hover:shadow-raised hover:-translate-y-0.5" : "",
       )}
     >
       <Handle type="target" position={Position.Left} className="opacity-0" />
-      <span className="mt-0.5">
+      <span className="mt-0.5 flex-shrink-0">
         <Icon className={cn("size-3.5", style.iconClass)} aria-hidden />
       </span>
       <span className="flex min-w-0 flex-col">
