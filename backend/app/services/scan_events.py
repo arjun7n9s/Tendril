@@ -127,6 +127,8 @@ class ScanEventLogger:
             if replayed
             else ScanEventType.bright_data_call
         )
+        if replayed:
+            metadata.setdefault("replayed", True)
         return self.emit(event_type, message, phase=phase, metadata=metadata or None)
 
     def aiml_call(
@@ -140,4 +142,6 @@ class ScanEventLogger:
         event_type = (
             ScanEventType.aiml_call_replayed if replayed else ScanEventType.aiml_call
         )
+        if replayed:
+            metadata.setdefault("replayed", True)
         return self.emit(event_type, message, phase=phase, metadata=metadata or None)
