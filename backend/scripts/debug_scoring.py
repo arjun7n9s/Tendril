@@ -1,6 +1,17 @@
-"""Sanity-check the scoring rubric against representative scenarios."""
+"""Sanity-check the scoring rubric against representative scenarios.
+
+Usage:
+    uv run python -m scripts.debug_scoring
+    uv run python scripts/debug_scoring.py
+"""
 
 from __future__ import annotations
+
+# Ensure `import app.*` works whether invoked as a module or as a file.
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from datetime import date
 

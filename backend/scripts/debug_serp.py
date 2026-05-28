@@ -2,13 +2,17 @@
 
 Usage:
     uv run python -m scripts.debug_serp "Ramp careers Kafka Snowflake"
+    uv run python scripts/debug_serp.py "Ramp careers Kafka Snowflake"
 """
 
 from __future__ import annotations
 
-import asyncio
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import asyncio
 
 from app.services.brightdata_client import BrightDataRestClient
 from app.services.serp_parser import parse_serp_html

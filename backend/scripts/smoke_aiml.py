@@ -7,12 +7,17 @@ warms the cache for the rest of the process.
 
 Usage:
     uv run python -m scripts.smoke_aiml
+    uv run python scripts/smoke_aiml.py
 """
 
 from __future__ import annotations
 
-import asyncio
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import asyncio
 
 from app.config import get_settings
 from app.services.aiml_client import AimlClient, AimlNotConfiguredError

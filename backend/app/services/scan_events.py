@@ -88,10 +88,28 @@ class ScanEventLogger:
         return event
 
     # Convenience wrappers
+    PHASE_START_MESSAGES = {
+        ScanStatus.discovering: "Discovering public sources via Bright Data SERP",
+        ScanStatus.scraping: "Fetching public evidence pages",
+        ScanStatus.extracting: "Extracting structured GTM signals",
+        ScanStatus.graphing: "Writing memory packets",
+        ScanStatus.scoring: "Scoring fit, timing, relationship, and evidence",
+        ScanStatus.briefing: "Drafting account brief and outreach",
+    }
+    PHASE_DONE_MESSAGES = {
+        ScanStatus.discovering: "Source discovery complete",
+        ScanStatus.scraping: "Evidence collection complete",
+        ScanStatus.extracting: "Signal extraction complete",
+        ScanStatus.graphing: "Memory layer updated",
+        ScanStatus.scoring: "Scoring complete",
+        ScanStatus.briefing: "Brief and outreach ready for review",
+    }
+
     def phase_started(self, phase: ScanStatus, message: str | None = None) -> ScanEvent:
         return self.emit(
             ScanEventType.phase_started,
-            message or f"phase started: {phase.value}",
+            message
+            or self.PHASE_START_MESSAGES.get(phase, f"phase started: {phase.value}"),
             phase=phase,
         )
 
@@ -100,7 +118,8 @@ class ScanEventLogger:
     ) -> ScanEvent:
         return self.emit(
             ScanEventType.phase_completed,
-            message or f"phase completed: {phase.value}",
+            message
+            or self.PHASE_DONE_MESSAGES.get(phase, f"phase completed: {phase.value}"),
             phase=phase,
             metadata=counts or None,
         )

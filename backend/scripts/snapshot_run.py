@@ -2,8 +2,7 @@
 
 Usage:
     uv run python -m scripts.snapshot_run --scan-id scan_xxx
-    uv run python -m scripts.snapshot_run --account-domain ramp.com  # latest scan for that account
-    uv run python -m scripts.snapshot_run --account-id acc_xxx       # latest scan for that account
+    uv run python scripts/snapshot_run.py --account-domain ramp.com
 
 The snapshot lands at backend/fixtures/blessed_runs/<account_id>.json
 and can be replayed via `mode=cached`.
@@ -11,9 +10,13 @@ and can be replayed via `mode=cached`.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import argparse
 import json
-import sys
 
 from sqlalchemy import select
 

@@ -6,12 +6,17 @@ so we don't burn credits chasing a config bug.
 
 Usage:
     uv run python -m scripts.smoke_brightdata
+    uv run python scripts/smoke_brightdata.py
 """
 
 from __future__ import annotations
 
-import asyncio
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import asyncio
 
 from app.config import get_settings
 from app.services.brightdata_client import (

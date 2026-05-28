@@ -1,13 +1,19 @@
 """Phase 2 end-to-end smoke against the dev DB.
 
-Run with: uv run python scripts/smoke_phase2.py
+Run with:
+    uv run python -m scripts.smoke_phase2
+    uv run python scripts/smoke_phase2.py
 """
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import json
 import time
-from pathlib import Path
 
 from fastapi.testclient import TestClient
 

@@ -6,6 +6,7 @@ as a live scan with no external credits spent.
 
 Usage:
     uv run python -m scripts.smoke_phase6
+    uv run python scripts/smoke_phase6.py
 """
 
 from __future__ import annotations
@@ -13,6 +14,8 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Force mock_mode=true: cached replay should work without any external creds.
 os.environ["SIGNALGRAPH_MOCK_MODE"] = "true"

@@ -7,6 +7,7 @@ fetches and AIML calls.
 
 Usage:
     uv run python -m scripts.smoke_phase4
+    uv run python scripts/smoke_phase4.py
 """
 
 from __future__ import annotations
@@ -14,6 +15,8 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Force live mode for this smoke run regardless of .env.
 os.environ["SIGNALGRAPH_MOCK_MODE"] = "false"
