@@ -16,6 +16,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useEvidenceDrawer } from "@/components/evidence/evidence-drawer-context";
 import type { SignalRead, SignalType } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { formatRelative } from "@/lib/utils/dates";
@@ -48,10 +49,10 @@ const SIGNAL_LABEL: Record<SignalType, string> = {
 
 type SignalCardProps = {
   signal: SignalRead;
-  onViewEvidence?: (signal: SignalRead) => void;
 };
 
-export function SignalCard({ signal, onViewEvidence }: SignalCardProps) {
+export function SignalCard({ signal }: SignalCardProps) {
+  const drawer = useEvidenceDrawer();
   const Icon = SIGNAL_ICON[signal.signal_type];
   const confidencePct = Math.round((signal.confidence ?? 0) * 100);
   const evidenceHost = (() => {
@@ -128,7 +129,7 @@ export function SignalCard({ signal, onViewEvidence }: SignalCardProps) {
             variant="ghost"
             size="sm"
             className="h-7 px-2 text-[12px]"
-            onClick={() => onViewEvidence?.(signal)}
+            onClick={() => drawer.open({ kind: "signal", signal })}
           >
             <Quote className="size-3" aria-hidden />
             View evidence

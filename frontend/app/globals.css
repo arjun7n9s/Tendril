@@ -141,6 +141,77 @@
   text-wrap: balance;
 }
 
+/* ----------------------------------------------------------------------
+   Markdown — Evidence Drawer prose
+   Constrained typography for fetched source markdown so it stays
+   compact and readable without competing with surrounding chrome.
+   ---------------------------------------------------------------------- */
+
+.prose-evidence {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-fg-primary);
+}
+.prose-evidence h1,
+.prose-evidence h2,
+.prose-evidence h3,
+.prose-evidence h4 {
+  font-weight: 600;
+  margin: 1em 0 0.4em;
+  color: var(--color-fg-primary);
+}
+.prose-evidence h1 { font-size: 15px; }
+.prose-evidence h2 { font-size: 14px; }
+.prose-evidence h3 { font-size: 13px; }
+.prose-evidence p {
+  margin: 0.6em 0;
+}
+.prose-evidence ul,
+.prose-evidence ol {
+  margin: 0.6em 0;
+  padding-left: 1.2em;
+}
+.prose-evidence ul { list-style: disc; }
+.prose-evidence ol { list-style: decimal; }
+.prose-evidence li { margin: 0.2em 0; }
+.prose-evidence a {
+  color: var(--color-cobalt);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-evidence code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--color-raised);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.prose-evidence pre {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--color-raised);
+  padding: 8px 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.prose-evidence blockquote {
+  border-left: 2px solid var(--color-evidence);
+  padding-left: 0.8em;
+  color: var(--color-fg-secondary);
+  margin: 0.6em 0;
+}
+.prose-evidence table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+.prose-evidence th,
+.prose-evidence td {
+  border: 1px solid var(--color-border-default);
+  padding: 4px 6px;
+  text-align: left;
+}
+
 /* Reduced motion: disable Framer/CSS transitions except quick fades */
 @media (prefers-reduced-motion: reduce) {
   *,

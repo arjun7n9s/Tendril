@@ -8,6 +8,7 @@ import { AccountHeader } from "@/components/accounts/account-header";
 import { AccountScoreStrip } from "@/components/accounts/account-score-strip";
 import { TopCommandBar } from "@/components/app-shell/top-command-bar";
 import { AccountBriefPanel } from "@/components/briefs/account-brief-panel";
+import { EvidenceDrawerProvider } from "@/components/evidence/evidence-drawer-context";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { SectionHeading } from "@/components/primitives/section-heading";
 import { LiveScanPanel } from "@/components/scans/live-scan-panel";
@@ -86,7 +87,7 @@ export function AccountDetailClient({ accountId }: Props) {
     (latest_scan ? NON_TERMINAL_SCAN_STATUSES.has(latest_scan.status) : false);
 
   return (
-    <>
+    <EvidenceDrawerProvider>
       <TopCommandBar
         title={account.name}
         subtitle={account.domain ?? "No domain on file"}
@@ -177,7 +178,7 @@ export function AccountDetailClient({ accountId }: Props) {
         accountId={accountId}
         scanId={activeScanId}
       />
-    </>
+    </EvidenceDrawerProvider>
   );
 }
 
