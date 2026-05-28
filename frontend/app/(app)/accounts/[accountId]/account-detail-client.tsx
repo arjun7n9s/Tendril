@@ -2,6 +2,7 @@
 
 import { Activity } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import { AccountHeader } from "@/components/accounts/account-header";
 import { AccountScoreStrip } from "@/components/accounts/account-score-strip";
@@ -9,15 +10,43 @@ import { TopCommandBar } from "@/components/app-shell/top-command-bar";
 import { AccountBriefPanel } from "@/components/briefs/account-brief-panel";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { SectionHeading } from "@/components/primitives/section-heading";
+import { LiveScanPanel } from "@/components/scans/live-scan-panel";
 import { SignalCard } from "@/components/signals/signal-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAccountDetail } from "@/lib/hooks/use-accounts";
+import { useStartScan } from "@/lib/hooks/use-scan";
+import { NON_TERMINAL_SCAN_STATUSES } from "@/lib/types";
 
 type Props = { accountId: string };
 
 export function AccountDetailClient({ accountId }: Props) {
   const detail = useAccountDetail(accountId);
+  const startScan = useStartScan(accountId);
+
+  const [panelOpen, setPanelOpen] = useState(false);
+  // Tracks scan ids the user explicitly opened (just-started or "View
+  // scan"). When null we fall back to the latest_scan from detail data,
+  // so non-terminal background scans are picked up automatically
+  // without an effect-based sync.
+  const [explicitScanId, setExplicitScanId] = useState<string | null>(null);
+
+  const latestScan = detail.data?.latest_scan ?? null;
+  const activeScanId =
+    explicitScanId ??
+    (latestScan && NON_TERMINAL_SCAN_STATUSES.has(latestScan.status) ? latestScan.id : null) ??
+    latestScan?.id ??
+    null;
+
+  const handleRunScan = async () => {
+    try {
+      const result = await startScan.mutateAsync({ mode: "live" });
+      setExplicitScanId(result.scan_id);
+      setPanelOpen(true);
+    } catch {
+      /* error already toasted by the hook */
+    }
+  };
 
   if (detail.isLoading) {
     return (
@@ -52,6 +81,9 @@ export function AccountDetailClient({ accountId }: Props) {
   }
 
   const { account, latest_scan, latest_score, latest_brief, recent_signals } = detail.data;
+  const scanRunning =
+    startScan.isPending ||
+    (latest_scan ? NON_TERMINAL_SCAN_STATUSES.has(latest_scan.status) : false);
 
   return (
     <>
@@ -65,7 +97,12 @@ export function AccountDetailClient({ accountId }: Props) {
         }
       />
       <div className="flex flex-col gap-5">
-        <AccountHeader account={account} lastScannedAt={latest_scan?.completed_at} />
+        <AccountHeader
+          account={account}
+          lastScannedAt={latest_scan?.completed_at}
+          onRunScan={handleRunScan}
+          isScanRunning={scanRunning}
+        />
 
         <div className="flex flex-col gap-5 px-6 pb-8">
           <AccountScoreStrip score={latest_score} brief={latest_brief} />
@@ -79,6 +116,21 @@ export function AccountDetailClient({ accountId }: Props) {
                     ? `${recent_signals.length} from latest scan`
                     : "No signals yet"
                 }
+                action={
+                  latest_scan ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[12px]"
+                      onClick={() => {
+                        setExplicitScanId(latest_scan.id);
+                        setPanelOpen(true);
+                      }}
+                    >
+                      View scan
+                    </Button>
+                  ) : null
+                }
               />
 
               {recent_signals.length === 0 ? (
@@ -86,6 +138,11 @@ export function AccountDetailClient({ accountId }: Props) {
                   icon={Activity}
                   title="No signals yet"
                   body="Run a live scan to discover hiring, migration, and champion changes for this account."
+                  action={
+                    <Button onClick={handleRunScan} loading={scanRunning} variant="signal" size="sm">
+                      Run Live Scan
+                    </Button>
+                  }
                 />
               ) : (
                 <div className="flex flex-col gap-3">
@@ -100,12 +157,26 @@ export function AccountDetailClient({ accountId }: Props) {
               <AccountBriefPanel brief={latest_brief} />
               <PlaceholderPanel
                 title="Outreach draft"
-                body="Approved drafts ship to the outreach review cockpit. The Phase 2 build wires the human-in-the-loop editor here."
+                body="Approved drafts ship to the outreach review cockpit. Phase 2 wires the human-in-the-loop editor here."
               />
             </aside>
           </div>
         </div>
       </div>
+
+      <LiveScanPanel
+        open={panelOpen}
+        onOpenChange={(next) => {
+          setPanelOpen(next);
+          if (!next) {
+            // Re-fetch the account detail when the user closes the
+            // panel so the score strip and signals reflect the run.
+            detail.refetch();
+          }
+        }}
+        accountId={accountId}
+        scanId={activeScanId}
+      />
     </>
   );
 }
