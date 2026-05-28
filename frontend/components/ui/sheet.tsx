@@ -19,7 +19,7 @@ const SheetOverlay = React.forwardRef<
     <DialogPrimitive.Overlay
       ref={ref}
       className={cn(
-        "fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px]",
+        "fixed inset-0 z-50 bg-[color:color-mix(in_oklab,var(--color-fg-primary)_38%,transparent)] backdrop-blur-[3px]",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         className,
       )}

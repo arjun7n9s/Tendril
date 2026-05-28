@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/primitives/copy-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
@@ -94,15 +95,18 @@ export function EvidenceDrawer({ subject, onOpenChange }: EvidenceDrawerProps) {
             <h3 className="text-[14px] leading-snug font-semibold text-[color:var(--color-fg-primary)]">
               {title || "Untitled source"}
             </h3>
-            <a
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 break-all text-[12px] text-[color:var(--color-fg-secondary)] hover:text-[color:var(--color-fg-primary)]"
-            >
-              {host}
-              <ExternalLink className="size-3" aria-hidden />
-            </a>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 break-all text-[12px] text-[color:var(--color-fg-secondary)] hover:text-[color:var(--color-fg-primary)]"
+              >
+                {host}
+                <ExternalLink className="size-3" aria-hidden />
+              </a>
+              {url ? <CopyButton value={url} label="Copy URL" /> : null}
+            </div>
           </header>
 
           <div className="flex flex-wrap items-center gap-1.5">

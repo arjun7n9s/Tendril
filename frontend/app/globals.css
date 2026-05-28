@@ -145,6 +145,18 @@
   text-wrap: balance;
 }
 
+/* Shimmer keyframe for the Skeleton primitive. Travels left-to-right
+   so the loading state feels directional. The global reduced-motion
+   rule below shrinks the duration to ~0 for users who opt out. */
+@keyframes tendril-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* ----------------------------------------------------------------------
    Markdown — Evidence Drawer prose
    Constrained typography for fetched source markdown so it stays

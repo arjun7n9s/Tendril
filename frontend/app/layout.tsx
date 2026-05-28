@@ -73,10 +73,14 @@ export default function RootLayout({
           position="bottom-right"
           richColors
           closeButton
+          duration={3500}
+          offset={20}
           toastOptions={{
             classNames: {
               toast:
-                "rounded-[8px] border border-[color:var(--color-border-default)] shadow-[var(--shadow-overlay)]",
+                "rounded-[8px] border border-[color:var(--color-border-default)] shadow-[var(--shadow-overlay)] data-[type=success]:border-[color:color-mix(in_oklab,var(--color-signal)_30%,transparent)] data-[type=error]:border-[color:color-mix(in_oklab,var(--color-risk)_30%,transparent)]",
+              title: "text-[13px] font-semibold",
+              description: "text-[12px] text-[color:var(--color-fg-secondary)]",
             },
           }}
         />
