@@ -39,7 +39,12 @@ export function Sidebar() {
   return (
     <nav
       aria-label="Primary"
-      className="flex h-full w-[212px] shrink-0 flex-col border-r border-[color:var(--color-border-default)] bg-[color:var(--color-surface)]"
+      // Collapses to an icon-only rail at narrow widths (md and below)
+      // and expands back to the full label column from md onward.
+      className={cn(
+        "hidden md:flex h-full shrink-0 flex-col border-r border-[color:var(--color-border-default)] bg-[color:var(--color-surface)]",
+        "w-[212px]",
+      )}
     >
       <Link
         href="/accounts"
@@ -103,6 +108,12 @@ export function Sidebar() {
     </nav>
   );
 }
+
+/**
+ * Mobile-only top nav strip is exported separately as
+ * `components/app-shell/mobile-nav.tsx`. It renders below the `md`
+ * breakpoint where this Sidebar is hidden.
+ */
 
 function TendrilGlyph() {
   return (

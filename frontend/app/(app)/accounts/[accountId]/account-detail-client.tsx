@@ -19,6 +19,7 @@ import { SignalTimeline } from "@/components/signals/signal-timeline";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MotionFade } from "@/components/primitives/motion-fade";
 import { useAccountDetail } from "@/lib/hooks/use-accounts";
 import { useStartScan } from "@/lib/hooks/use-scan";
 import { NON_TERMINAL_SCAN_STATUSES } from "@/lib/types";
@@ -171,8 +172,13 @@ export function AccountDetailClient({ accountId }: Props) {
                   </TabsList>
                   <TabsContent value="signals">
                     <div className="flex flex-col gap-3">
-                      {recent_signals.map((signal) => (
-                        <SignalCard key={signal.id} signal={signal} />
+                      {recent_signals.map((signal, idx) => (
+                        <MotionFade
+                          key={signal.id}
+                          delay={Math.min(idx, 5) * 0.04}
+                        >
+                          <SignalCard signal={signal} />
+                        </MotionFade>
                       ))}
                     </div>
                   </TabsContent>
