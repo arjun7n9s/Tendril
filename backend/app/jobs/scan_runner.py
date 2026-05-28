@@ -51,6 +51,10 @@ from app.services.briefing import (
     generate_outreach,
     generate_outreach_live,
 )
+from app.services.cache_runner import (
+    BlessedRunNotFoundError,
+    replay_blessed_run,
+)
 from app.services.extractor import extract_signals_live
 from app.services.aiml_client import AimlClient, AimlNotConfiguredError
 from app.services.guardrails import check_outreach
@@ -166,6 +170,19 @@ def _execute(db: Session, scan: Scan) -> None:
         raise RuntimeError(f"account_not_found:{scan.account_id}")
 
     log.info("scan_runner.start", scan_id=scan.id, account=account.name, mode=as_str(scan.mode))
+
+    if scan.mode == ScanMode.cached:
+        try:
+            replay_blessed_run(db, scan)
+            return
+        except BlessedRunNotFoundError as exc:
+            events.warning(
+                "no blessed-run snapshot for account; falling back to mock",
+                reason=str(exc),
+            )
+            scan.mode = ScanMode.mock
+            db.add(scan)
+            db.commit()
 
     # ---------- Phase: discovering ----------
     _commit_phase(db, scan, ScanStatus.discovering, _percent_for_phase(ScanStatus.discovering))
