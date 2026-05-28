@@ -7,11 +7,7 @@ import { StatusChip } from "@/components/primitives/status-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  useApproveDraft,
-  useEditDraft,
-  useRejectDraft,
-} from "@/lib/hooks/use-outreach";
+import { useApproveDraft, useEditDraft, useRejectDraft } from "@/lib/hooks/use-outreach";
 import type { OutreachRead, OutreachTone } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -39,17 +35,16 @@ export function DraftEditor({ draft }: DraftEditorProps) {
   const [tone, setTone] = useState<OutreachTone>(draft.tone);
   const [rejectOpen, setRejectOpen] = useState(false);
 
-  const isDirty =
-    subject !== draft.subject || body !== draft.body || tone !== draft.tone;
+  const isDirty = subject !== draft.subject || body !== draft.body || tone !== draft.tone;
 
   const isTerminal = draft.status === "approved" || draft.status === "rejected";
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
           <StatusChip kind="outreach" value={draft.status} />
-          <span className="text-[12px] tracking-[0.04em] uppercase text-[color:var(--color-fg-muted)]">
+          <span className="text-[12px] tracking-[0.04em] text-[color:var(--color-fg-muted)] uppercase">
             Draft #{draft.id.slice(-6)}
           </span>
         </div>
@@ -64,7 +59,7 @@ export function DraftEditor({ draft }: DraftEditorProps) {
 
       <div className="flex flex-col gap-1.5">
         <label
-          className="text-[11px] font-semibold tracking-[0.04em] uppercase text-[color:var(--color-fg-secondary)]"
+          className="text-[11px] font-semibold tracking-[0.04em] text-[color:var(--color-fg-secondary)] uppercase"
           htmlFor="draft-subject"
         >
           Subject
@@ -79,7 +74,7 @@ export function DraftEditor({ draft }: DraftEditorProps) {
 
       <div className={cn("flex flex-col gap-1.5", "flex-1")}>
         <label
-          className="text-[11px] font-semibold tracking-[0.04em] uppercase text-[color:var(--color-fg-secondary)]"
+          className="text-[11px] font-semibold tracking-[0.04em] text-[color:var(--color-fg-secondary)] uppercase"
           htmlFor="draft-body"
         >
           Body

@@ -21,7 +21,7 @@ export function ToneToggle({ value, onChange, disabled }: ToneToggleProps) {
     <div
       role="radiogroup"
       aria-label="Tone"
-      className="inline-flex items-center gap-0.5 rounded-[var(--radius-button)] border border-[color:var(--color-border-default)] bg-[color:var(--color-raised)] p-0.5"
+      className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-[var(--radius-button)] border border-[color:var(--color-border-default)] bg-[color:var(--color-raised)] p-0.5"
     >
       {OUTREACH_TONES.map((tone) => {
         const active = value === tone;
@@ -35,6 +35,7 @@ export function ToneToggle({ value, onChange, disabled }: ToneToggleProps) {
             disabled={disabled}
             className={cn(
               "h-7 rounded-[calc(var(--radius-button)-2px)] px-2.5 text-[12px] font-medium transition-colors",
+              "shrink-0",
               active
                 ? "bg-[color:var(--color-surface)] text-[color:var(--color-fg-primary)] shadow-[var(--shadow-flat)]"
                 : "text-[color:var(--color-fg-secondary)] hover:text-[color:var(--color-fg-primary)]",
