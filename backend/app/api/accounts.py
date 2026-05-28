@@ -121,18 +121,40 @@ def get_account(account_id: str, db: Session = Depends(get_db)) -> dict[str, Any
     latest_scan = db.scalar(
         select(Scan).where(Scan.account_id == account_id).order_by(Scan.created_at.desc())
     )
-    latest_score = db.scalar(
-        select(Score).where(Score.account_id == account_id).order_by(Score.created_at.desc())
-    )
-    latest_brief = db.scalar(
-        select(Brief).where(Brief.account_id == account_id).order_by(Brief.created_at.desc())
-    )
-    recent_signals = db.scalars(
-        select(Signal)
-        .where(Signal.account_id == account_id)
-        .order_by(Signal.created_at.desc())
-        .limit(10)
-    ).all()
+
+    # Phase 7: scope score / brief / signals to the latest scan when one
+    # exists, so repeated runs in a single demo DB don't pollute the
+    # account view with stale rows. Fall back to the account-level
+    # latest values if no scan exists yet.
+    if latest_scan is not None:
+        latest_score = db.scalar(
+            select(Score)
+            .where(Score.scan_id == latest_scan.id)
+            .order_by(Score.created_at.desc())
+        )
+        latest_brief = db.scalar(
+            select(Brief)
+            .where(Brief.scan_id == latest_scan.id)
+            .order_by(Brief.created_at.desc())
+        )
+        recent_signals = db.scalars(
+            select(Signal)
+            .where(Signal.scan_id == latest_scan.id)
+            .order_by(Signal.confidence.desc(), Signal.created_at.desc())
+            .limit(10)
+        ).all()
+    else:
+        latest_score = db.scalar(
+            select(Score)
+            .where(Score.account_id == account_id)
+            .order_by(Score.created_at.desc())
+        )
+        latest_brief = db.scalar(
+            select(Brief)
+            .where(Brief.account_id == account_id)
+            .order_by(Brief.created_at.desc())
+        )
+        recent_signals = []
 
     return {
         "account": AccountRead.model_validate(account).model_dump(mode="json"),

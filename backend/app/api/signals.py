@@ -77,15 +77,39 @@ def list_account_signals(
     account_id: str,
     signal_type: SignalType | None = None,
     min_confidence: float | None = Query(default=None, ge=0.0, le=1.0),
+    all_history: bool = Query(
+        default=False,
+        description=(
+            "When false (default), returns only signals from the latest "
+            "scan to keep the demo view clean. Set true to include the "
+            "full history across all scans for this account."
+        ),
+    ),
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> SignalList:
-    stmt, count_stmt = _signal_query(
-        account_id=account_id,
-        signal_type=signal_type,
-        min_confidence=min_confidence,
-    )
+    if not all_history:
+        from app.models.scan import Scan
+
+        latest_scan = db.scalar(
+            select(Scan)
+            .where(Scan.account_id == account_id)
+            .order_by(Scan.created_at.desc())
+        )
+        if latest_scan is None:
+            return SignalList(items=[], total=0)
+        stmt, count_stmt = _signal_query(
+            scan_id=latest_scan.id,
+            signal_type=signal_type,
+            min_confidence=min_confidence,
+        )
+    else:
+        stmt, count_stmt = _signal_query(
+            account_id=account_id,
+            signal_type=signal_type,
+            min_confidence=min_confidence,
+        )
     total = db.scalar(count_stmt) or 0
     rows = db.scalars(
         stmt.order_by(Signal.confidence.desc(), Signal.created_at.desc()).limit(limit).offset(offset)
