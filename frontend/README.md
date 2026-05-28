@@ -4,7 +4,7 @@ The Next.js dashboard for **Tendril**, a live GTM change intelligence workspace.
 
 This package is the user-facing surface. The FastAPI backend lives at `../backend` and owns scans, scoring, briefs, and outreach.
 
-> Naming note: the codebase predates the brand decision and you may still see `SignalGraph` in deeper engineering docs (`engineered_product_blueprint.md`, `frontend_architecture.md`). The product name is **Tendril**.
+> Naming note: the codebase predates the brand decision and you may still see `SignalGraph` in deeper engineering docs (`kiro/kiro-product-blueprint.md`, `kiro/kiro-frontend-architecture.md`). The product name is **Tendril**.
 
 ## Stack
 
@@ -114,4 +114,4 @@ lib/
 
 ## Status
 
-All three planned phases have shipped. The product surfaces from `frontend_architecture.md` are live: Accounts command center, Account Intelligence Room (with Signals / Timeline / Graph tabs), Live Scan Panel, Evidence Drawer, Outreach Cockpit, Imports, Signal Feed, Live Scans. Settings remains a Phase 4 stub. See `../frontend_requirements_checklist.md` for the locked decisions and `../frontend_assets_plan.md` for the asset inventory.
+All three planned phases have shipped. The product surfaces from `kiro/kiro-frontend-architecture.md` are live: Accounts command center, Account Intelligence Room (with Signals / Timeline / Graph tabs), Live Scan Panel, Evidence Drawer, Outreach Cockpit, Imports, Signal Feed, Live Scans. Settings is also live as of the polish pass. See `../kiro/kiro-frontend-requirements-checklist.md` for the locked decisions and `../kiro/kiro-frontend-assets-plan.md` for the asset inventory.

@@ -1,6 +1,7 @@
 // Client-derived knowledge graph for an account.
 //
-// Decision sourced from frontend_requirements_checklist.md J: Phase 1
+// Decision sourced from kiro/kiro-frontend-requirements-checklist.md J:
+// Phase 1
 // graph derives nodes/edges from existing payloads (account,
 // signals, brief.key_evidence) instead of waiting on a dedicated
 // /accounts/{id}/graph backend endpoint. We can revisit later if

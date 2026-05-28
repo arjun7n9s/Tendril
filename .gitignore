@@ -1,20 +1,88 @@
+# --------------------------------------------------------------------
+# Tendril root .gitignore
+#
+# Hardened so secrets, runtime state, build output, and screenshots
+# can never slip into the repository regardless of which subfolder
+# they appear in. Per-package .gitignore files (backend/, frontend/)
+# also exist and complement these rules.
+# --------------------------------------------------------------------
+
+# --- Secrets and environment ---------------------------------------
 .env
 .env.*
 !.env.example
-signalgraph.db
+!.env.local.example
+
+# --- Application databases -----------------------------------------
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+signalgraph.db
+backend/signalgraph.db
+
+# --- Python runtime ------------------------------------------------
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
 .pytest_cache/
-node_modules/
-.next/
-dist/
-build/
-pdf_pages_preview/
-BrightData-Hackathon.pdf
+.ruff_cache/
+.mypy_cache/
+.tox/
+.coverage
+htmlcov/
 backend/.venv/
 backend/.pytest_cache/
 backend/var/
-backend/signalgraph.db
+
+# --- Node / Next.js runtime ----------------------------------------
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Logs ----------------------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+qa-frontend*.log
+lighthouse-*.json
+.lighthouseci/
+
+# --- Screenshots, scratch images, recordings -----------------------
+screenshots/
+screenshot*.png
+screenshot*.jpg
+screenshot*.jpeg
+*.mp4
+*.mov
+*.webm
+
+# --- Editor / IDE / OS ---------------------------------------------
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# --- Hackathon artifacts kept out of the public repo ---------------
+pdf_pages_preview/
+BrightData-Hackathon.pdf

@@ -1,9 +1,9 @@
 # SignalGraph Backend - Requirements Checklist
 
-**Purpose:** Gather everything needed before we start coding the backend described in `backend_implementation_plan.md`.
+**Purpose:** Gather everything needed before we start coding the backend described in `codex-backend-implementation-plan.md`.
 **Status legend:** [ ] pending  · [x] decided  · [~] default assumed, confirm if different
 
-> Updated after your answers in `backend_implementation_plan.md` Section 19. Locked decisions are marked. Open items have safe defaults so we are not blocked.
+> Updated after your answers in `codex-backend-implementation-plan.md` Section 19. Locked decisions are marked. Open items have safe defaults so we are not blocked.
 
 ---
 
@@ -20,7 +20,7 @@
 
 ### A2. API keys & accounts you must obtain
 
-Full list moved to `external_credentials_required.md`. Mock mode covers build phase if any are missing.
+Full list moved to `kiro-external-credentials-required.md`. Mock mode covers build phase if any are missing.
 
 Quick tracking:
 - [ ] Bright Data API key + zones (1.2, 1.4, 1.5)
@@ -146,12 +146,12 @@ I'll author all of these from the demo story; you can edit anytime.
 - Polling at 1.5–2s
 - Sales-ready: total ≥ 70 AND ≥ 2 signals at conf ≥ 0.65 AND ≥ 2 unique evidence URLs; near-miss 55–69
 - Outreach drafts only, never sent
-- Credentials list maintained separately at `external_credentials_required.md`
+- Credentials list maintained separately at `kiro-external-credentials-required.md`
 
 ---
 
 ## F. Unblocked-To-Start Status
 
-I have everything I need to start scaffolding right now, in mock mode, using the defaults above. As you fill in `external_credentials_required.md`, we wire live integrations one at a time without blocking.
+I have everything I need to start scaffolding right now, in mock mode, using the defaults above. As you fill in `kiro-external-credentials-required.md`, we wire live integrations one at a time without blocking.
 
 Say the word and I'll begin Phase 1.

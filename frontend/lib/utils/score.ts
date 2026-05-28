@@ -5,7 +5,8 @@ export type ScoreTier = "sales-ready" | "near-miss" | "watch" | "low";
 /**
  * Tendril uses a tiered visual treatment instead of a continuous gradient
  * because the backend already publishes discrete score thresholds in
- * backend_implementation_plan.md and backend_requirements_checklist.md:
+ * `kiro/codex-backend-implementation-plan.md` and
+ * `kiro/kiro-backend-requirements-checklist.md`:
  *
  *   - sales-ready: total >= 70 (and the backend already marks the boolean)
  *   - near-miss : 55-69 with sales_ready=false

@@ -16,7 +16,7 @@ const POLL_INTERVAL_MS = 1500;
 /**
  * Polls a single scan until it reaches a terminal status.
  *
- * Decision sourced from frontend_requirements_checklist.md F:
+ * Decision sourced from kiro/kiro-frontend-requirements-checklist.md F:
  *   - refetchInterval 1500ms while non-terminal,
  *   - stop polling on completed | failed,
  *   - 3s grace before any error toast (handled at the consumer).

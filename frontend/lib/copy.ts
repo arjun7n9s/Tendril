@@ -1,7 +1,7 @@
 /**
  * Centralized UI copy.
  *
- * Source: frontend_architecture.md §23 + frontend_assets_plan.md §11.
+ * Source: kiro/kiro-frontend-architecture.md §23 + kiro/kiro-frontend-assets-plan.md §11.
  * Edit here, never inline. Lets us audit tone in one pass.
  */
 export const COPY = {

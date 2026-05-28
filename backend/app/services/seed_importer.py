@@ -1,6 +1,6 @@
 """Seed CSV importer.
 
-Required columns (per backend_implementation_plan.md Section 7):
+Required columns (per kiro/codex-backend-implementation-plan.md Section 7):
 
     record_type, account_name, account_domain, industry, company_size,
     person_name, title, email, previous_company, role_type,

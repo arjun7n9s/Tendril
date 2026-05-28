@@ -1,7 +1,7 @@
 # Tendril Frontend — Requirements Checklist
 
-**Purpose:** Lock every decision, asset, dependency, and contract needed before we build the premium dashboard described in `frontend_architecture.md`.
-**Style:** Mirrors `backend_requirements_checklist.md`.
+**Purpose:** Lock every decision, asset, dependency, and contract needed before we build the premium dashboard described in `kiro-frontend-architecture.md`.
+**Style:** Mirrors `kiro-backend-requirements-checklist.md`.
 **Status legend:** `[ ]` pending · `[x]` decided · `[~]` default assumed, confirm if different · `[?]` blocking question for you
 
 ---
@@ -10,8 +10,8 @@
 
 This checklist is derived from:
 
-- `frontend_architecture.md` — north star, screens, components, design language
-- `engineered_product_blueprint.md` — product positioning and demo story
+- `kiro-frontend-architecture.md` — north star, screens, components, design language
+- `kiro-product-blueprint.md` — product positioning and demo story
 - `backend/app/api/*.py`, `backend/app/schemas/*.py`, `backend/app/models/enums.py` — exact contracts the frontend must consume
 
 Anything in those files but not echoed here is still binding.
@@ -50,7 +50,7 @@ Anything in those files but not echoed here is still binding.
 ### A3. Theme and visual direction
 
 - [x] **Mode** — Light-first. Dark mode is a Phase 4 polish item, not a launch requirement.
-- [x] **Palette** — Exactly the values in `frontend_architecture.md` §6:
+- [x] **Palette** — Exactly the values in `kiro-frontend-architecture.md` §6:
   - Canvas `#F7F8F6`
   - Surface `#FFFFFF`
   - Raised surface `#F1F4F2`

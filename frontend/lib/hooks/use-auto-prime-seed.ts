@@ -23,7 +23,7 @@ async function fetchSeedFile(): Promise<File | null> {
 /**
  * Auto-primes the demo seed when /accounts is empty on first paint.
  *
- * Decision locked in frontend_requirements_checklist.md A5: the demo
+ * Decision locked in kiro/kiro-frontend-requirements-checklist.md A5: the demo
  * never opens to an empty app, but the user can still re-run a manual
  * import at /imports.
  */

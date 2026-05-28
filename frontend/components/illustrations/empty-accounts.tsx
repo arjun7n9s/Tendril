@@ -2,7 +2,7 @@
  * Empty state illustration for /accounts.
  *
  * All seven illustrations follow the same constraints from
- * frontend_assets_plan.md §5: flat, abstract, single-stroke, no
+ * kiro/kiro-frontend-assets-plan.md §5: flat, abstract, single-stroke, no
  * literal devices or human figures. Each picks up the active accent
  * via currentColor so it shifts with our token palette.
  */

@@ -1,6 +1,6 @@
 # SignalGraph Backend - Phase Plan (Final)
 
-**Inputs used:** `backend_implementation_plan.md`, `engineered_product_blueprint.md`, `external_credentials_usage_guide.md`, `.env`.
+**Inputs used:** `codex-backend-implementation-plan.md`, `kiro-product-blueprint.md`, `kiro-external-credentials-usage-guide.md`, `.env`.
 **State of credentials:** Bright Data (REST + Browser), AI/ML API (key + model IDs), Triggerware (key, stubbed), Speechmatics (key, deferred). **Cognee deferred.** Mock mode default.
 **Status:** Approved with refinements 1-13.
 
@@ -213,7 +213,7 @@ Verification: `uvicorn app.main:app --reload` boots, `/health` returns the above
 Goal: importing the demo CSV creates accounts, people, ICP rows. `scan_events` table exists.
 
 Deliverables:
-- ORM models matching Section 6 of `backend_implementation_plan.md` plus the new `scan_events` table and `scans.mode` enum (`mock | live | cached`).
+- ORM models matching Section 6 of `codex-backend-implementation-plan.md` plus the new `scan_events` table and `scans.mode` enum (`mock | live | cached`).
 - `fixtures/seed_demo.csv`: 5 target/customer accounts, 3 champions, 1 ICP profile.
 - `POST /api/v1/import/seed` (multipart CSV) -> upserts.
 - `GET /api/v1/accounts` (filter, paginate).

@@ -1,6 +1,6 @@
 # Tendril Frontend — Assets Plan
 
-**Purpose:** Enumerate every visual asset, font, icon, illustration, fixture, and copy file the premium UI needs, where it comes from, and the license posture. Paired with `frontend_requirements_checklist.md`.
+**Purpose:** Enumerate every visual asset, font, icon, illustration, fixture, and copy file the premium UI needs, where it comes from, and the license posture. Paired with `kiro-frontend-requirements-checklist.md`.
 
 **Rule of thumb:** if a file lives under `frontend/public/` or `frontend/assets/`, it must be listed here with a clear source.
 
