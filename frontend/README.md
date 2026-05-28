@@ -114,4 +114,4 @@ lib/
 
 ## Status
 
-Phase 1 (shell, tokens, accounts surfaces, imports) is complete and verified end-to-end against the live backend. Phase 2 (live scan panel, evidence drawer, outreach cockpit) is in progress. See `../frontend_requirements_checklist.md` for the running plan.
+All three planned phases have shipped. The product surfaces from `frontend_architecture.md` are live: Accounts command center, Account Intelligence Room (with Signals / Timeline / Graph tabs), Live Scan Panel, Evidence Drawer, Outreach Cockpit, Imports, Signal Feed, Live Scans. Settings remains a Phase 4 stub. See `../frontend_requirements_checklist.md` for the locked decisions and `../frontend_assets_plan.md` for the asset inventory.
