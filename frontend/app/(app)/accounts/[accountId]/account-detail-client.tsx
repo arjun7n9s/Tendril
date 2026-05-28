@@ -9,6 +9,7 @@ import { AccountScoreStrip } from "@/components/accounts/account-score-strip";
 import { TopCommandBar } from "@/components/app-shell/top-command-bar";
 import { AccountBriefPanel } from "@/components/briefs/account-brief-panel";
 import { EvidenceDrawerProvider } from "@/components/evidence/evidence-drawer-context";
+import { AccountOutreachPreview } from "@/components/outreach/account-outreach-preview";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { SectionHeading } from "@/components/primitives/section-heading";
 import { LiveScanPanel } from "@/components/scans/live-scan-panel";
@@ -156,10 +157,7 @@ export function AccountDetailClient({ accountId }: Props) {
 
             <aside className="flex flex-col gap-4">
               <AccountBriefPanel brief={latest_brief} />
-              <PlaceholderPanel
-                title="Outreach draft"
-                body="Approved drafts ship to the outreach review cockpit. Phase 2 wires the human-in-the-loop editor here."
-              />
+              <AccountOutreachPreview accountId={accountId} />
             </aside>
           </div>
         </div>
@@ -179,16 +177,5 @@ export function AccountDetailClient({ accountId }: Props) {
         scanId={activeScanId}
       />
     </EvidenceDrawerProvider>
-  );
-}
-
-function PlaceholderPanel({ title, body }: { title: string; body: string }) {
-  return (
-    <section className="rounded-[var(--radius-card)] border border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] p-4">
-      <h3 className="text-[13px] font-semibold tracking-[0.04em] uppercase text-[color:var(--color-fg-secondary)]">
-        {title}
-      </h3>
-      <p className="mt-1 text-[13px] text-[color:var(--color-fg-muted)]">{body}</p>
-    </section>
   );
 }
