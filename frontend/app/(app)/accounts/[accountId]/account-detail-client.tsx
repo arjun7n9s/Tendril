@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -14,11 +15,26 @@ import { EmptyState } from "@/components/primitives/empty-state";
 import { SectionHeading } from "@/components/primitives/section-heading";
 import { LiveScanPanel } from "@/components/scans/live-scan-panel";
 import { SignalCard } from "@/components/signals/signal-card";
+import { SignalTimeline } from "@/components/signals/signal-timeline";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAccountDetail } from "@/lib/hooks/use-accounts";
 import { useStartScan } from "@/lib/hooks/use-scan";
 import { NON_TERMINAL_SCAN_STATUSES } from "@/lib/types";
+
+// React Flow is heavy and only renders inside the Graph tab. Lazy-load
+// it so the bundle for the Signals/Timeline tabs stays light.
+const AccountKnowledgeGraph = dynamic(
+  () =>
+    import("@/components/graph/account-knowledge-graph").then(
+      (mod) => mod.AccountKnowledgeGraph,
+    ),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[540px] rounded-[var(--radius-card)]" />,
+  },
+);
 
 type Props = { accountId: string };
 
@@ -112,7 +128,7 @@ export function AccountDetailClient({ accountId }: Props) {
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
             <section className="flex flex-col gap-3">
               <SectionHeading
-                title="Signals"
+                title="Intelligence"
                 description={
                   recent_signals.length > 0
                     ? `${recent_signals.length} from latest scan`
@@ -147,11 +163,35 @@ export function AccountDetailClient({ accountId }: Props) {
                   }
                 />
               ) : (
-                <div className="flex flex-col gap-3">
-                  {recent_signals.map((signal) => (
-                    <SignalCard key={signal.id} signal={signal} />
-                  ))}
-                </div>
+                <Tabs defaultValue="signals">
+                  <TabsList>
+                    <TabsTrigger value="signals">Signals</TabsTrigger>
+                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    <TabsTrigger value="graph">Graph</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="signals">
+                    <div className="flex flex-col gap-3">
+                      {recent_signals.map((signal) => (
+                        <SignalCard key={signal.id} signal={signal} />
+                      ))}
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="timeline">
+                    <SignalTimeline signals={recent_signals} />
+                  </TabsContent>
+                  <TabsContent value="graph">
+                    <AccountKnowledgeGraph
+                      account={account}
+                      signals={recent_signals}
+                      brief={latest_brief}
+                    />
+                    <p className="mt-2 text-[11px] text-[color:var(--color-fg-muted)]">
+                      Derived locally from the latest scan&rsquo;s signals, evidence URLs, and
+                      brief. Cognee-backed relationships will replace this view once the graph
+                      endpoint ships.
+                    </p>
+                  </TabsContent>
+                </Tabs>
               )}
             </section>
 
