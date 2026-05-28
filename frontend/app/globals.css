@@ -16,22 +16,26 @@
   /* Text */
   --color-fg-primary: #171a1c;
   --color-fg-secondary: #5d656b;
-  --color-fg-muted: #8a9197;
+  --color-fg-muted: #6a7074; /* tuned by scripts/contrast-audit.mjs to clear AA on canvas, surface, and raised */
 
   /* Border */
   --color-border-default: #dde3e0;
   --color-border-strong: #c8d0cc;
 
-  /* Semantic accents */
-  --color-signal: #0f9f6e; /* sales-ready / verified */
+  /* Semantic accents
+     Accent foreground hexes were tuned via scripts/contrast-audit.mjs
+     so chip text on its soft background and white text on the solid
+     fill both clear WCAG AA (4.5:1). Cobalt already cleared at the
+     architecture's published value. */
+  --color-signal: #0c7c56; /* sales-ready / verified */
   --color-signal-soft: #e6f4ee;
   --color-cobalt: #3457d5; /* live process / scan */
   --color-cobalt-soft: #e6ecfb;
-  --color-evidence: #c47a1d; /* inferred / amber */
+  --color-evidence: #995f17; /* inferred / amber */
   --color-evidence-soft: #faecd6;
-  --color-risk: #c2413a; /* failure / risk */
+  --color-risk: #ba3e38; /* failure / risk */
   --color-risk-soft: #fbe5e3;
-  --color-graph: #138a8a; /* memory / relationships */
+  --color-graph: #107575; /* memory / relationships */
   --color-graph-soft: #d9efef;
 
   /* Radii */

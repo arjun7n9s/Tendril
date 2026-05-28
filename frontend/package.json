@@ -13,7 +13,8 @@
     "start": "next start",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
-    "sync:seed": "node scripts/sync-seed.mjs"
+    "sync:seed": "node scripts/sync-seed.mjs",
+    "contrast:audit": "node scripts/contrast-audit.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
