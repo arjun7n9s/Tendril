@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -23,10 +23,35 @@ from app.schemas.signal import SignalRead
 router = APIRouter(prefix="/api/v1/accounts", tags=["accounts"])
 
 
+def _latest_score_subquery():
+    """Subquery returning the latest score row per account."""
+    inner = (
+        select(
+            Score.account_id.label("account_id"),
+            func.max(Score.created_at).label("max_created"),
+        )
+        .group_by(Score.account_id)
+        .subquery()
+    )
+    return inner
+
+
 @router.get("", response_model=AccountListResponse)
 def list_accounts(
     status: AccountStatus | None = Query(default=None),
     search: str | None = Query(default=None, min_length=1, max_length=255),
+    sales_ready: bool | None = Query(
+        default=None,
+        description="Filter by latest score's sales_ready flag",
+    ),
+    near_miss: bool | None = Query(
+        default=None,
+        description=(
+            "When true, return accounts whose latest score is 55-69 and "
+            "not sales_ready. When false, return accounts that are sales_ready "
+            "or scored below 55."
+        ),
+    ),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
@@ -46,6 +71,36 @@ def list_accounts(
         count_stmt = count_stmt.where(
             or_(func.lower(Account.name).like(like), func.lower(Account.domain).like(like))
         )
+
+    if sales_ready is not None or near_miss is not None:
+        latest = _latest_score_subquery()
+        join_condition = and_(
+            Score.account_id == latest.c.account_id,
+            Score.created_at == latest.c.max_created,
+        )
+        stmt = stmt.join(Score, Score.account_id == Account.id).join(
+            latest, join_condition
+        )
+        count_stmt = count_stmt.join(Score, Score.account_id == Account.id).join(
+            latest, join_condition
+        )
+        if sales_ready is not None:
+            stmt = stmt.where(Score.sales_ready.is_(sales_ready))
+            count_stmt = count_stmt.where(Score.sales_ready.is_(sales_ready))
+        if near_miss is True:
+            stmt = stmt.where(Score.sales_ready.is_(False)).where(
+                Score.total_score >= 55, Score.total_score <= 69
+            )
+            count_stmt = count_stmt.where(Score.sales_ready.is_(False)).where(
+                Score.total_score >= 55, Score.total_score <= 69
+            )
+        elif near_miss is False:
+            stmt = stmt.where(
+                or_(Score.sales_ready.is_(True), Score.total_score < 55)
+            )
+            count_stmt = count_stmt.where(
+                or_(Score.sales_ready.is_(True), Score.total_score < 55)
+            )
 
     total = db.scalar(count_stmt) or 0
     rows = db.scalars(stmt.order_by(Account.name).limit(limit).offset(offset)).all()

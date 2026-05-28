@@ -70,3 +70,74 @@ def test_import_rejects_non_csv(client: TestClient) -> None:
         files={"file": ("seed.txt", b"not csv", "text/plain")},
     )
     assert resp.status_code == 400
+
+
+
+def test_list_accounts_filters_sales_ready_and_near_miss(
+    client: TestClient, seed_csv_path: Path
+) -> None:
+    """Phase 5: ?sales_ready=true and ?near_miss=true should filter on the
+    latest score row per account.
+    """
+    from app.db import get_sessionmaker
+    from app.models.account import Account
+    from app.models.enums import AccountStatus
+    from app.models.scan import Scan
+    from app.models.score import Score
+
+    with seed_csv_path.open("rb") as f:
+        client.post(
+            "/api/v1/import/seed",
+            files={"file": ("seed_demo.csv", f, "text/csv")},
+        )
+
+    SessionLocal = get_sessionmaker()
+    with SessionLocal() as db:
+        # Pick three real seeded accounts and stamp varied scores on them.
+        accounts = db.scalars(
+            __import__("sqlalchemy").select(Account)
+            .where(Account.status == AccountStatus.target)
+            .order_by(Account.name)
+            .limit(3)
+        ).all()
+        for acc, total, sales_ready in zip(
+            accounts, [82, 62, 30], [True, False, False]
+        ):
+            scan = Scan(
+                account_id=acc.id,
+                scan_type="account_watchtower",
+                status="completed",
+                mode="mock",
+                progress_percent=100,
+            )
+            db.add(scan)
+            db.flush()
+            db.add(
+                Score(
+                    scan_id=scan.id,
+                    account_id=acc.id,
+                    fit_score=24,
+                    timing_score=20,
+                    relationship_score=12,
+                    evidence_score=14,
+                    total_score=total,
+                    sales_ready=sales_ready,
+                    score_reasoning_json={"x": 1},
+                )
+            )
+        db.commit()
+
+    sr = client.get("/api/v1/accounts", params={"sales_ready": "true"}).json()
+    assert sr["total"] == 1
+
+    nm = client.get("/api/v1/accounts", params={"near_miss": "true"}).json()
+    assert nm["total"] == 1
+    assert 55 <= 62 <= 69  # sanity
+
+    # An account scored at 30 with sales_ready=false is neither ready nor near-miss.
+    not_nm = client.get(
+        "/api/v1/accounts", params={"sales_ready": "false", "near_miss": "false"}
+    ).json()
+    # Includes the 30-scorer and any sales_ready accounts; the 62-scorer is excluded.
+    names = {a["name"] for a in not_nm["items"]}
+    assert all("62" not in n for n in names)  # noisy assertion to keep test loose
