@@ -1,12 +1,14 @@
 """Helper that writes ScanEvent rows with auto-incrementing sequence.
 
 Every external call (Bright Data, AI/ML API, MemoryService) and every
-phase transition writes one row through this helper. Metadata is
-sanitized before it lands in the DB.
+phase transition writes one row through this helper. Both metadata and
+the human-readable message are sanitized before they land in the DB,
+so a careless f-string that includes a target URL or token never leaks.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from sqlalchemy import func, select
@@ -14,7 +16,35 @@ from sqlalchemy.orm import Session
 
 from app.models.enums import ScanEventType, ScanStatus
 from app.models.scan_event import ScanEvent
-from app.services.sanitization import sanitize_metadata
+from app.services.sanitization import host_of, sanitize_metadata, sanitize_url
+
+# Conservative URL detector. Matches http(s) and ws(s) URLs, including
+# those with embedded user:pass. Captures everything until the first
+# whitespace or quote, so we can replace with the host-only form.
+_URL_IN_MESSAGE_RE = re.compile(
+    r"""(?P<url>(?:https?|wss?)://[^\s"'<>)\]]+)""",
+    re.IGNORECASE,
+)
+
+
+def _sanitize_message(message: str) -> str:
+    """Replace any full URL embedded in a message with a host-only form.
+
+    Keeps message readability ("fetched ramp.com") while ensuring no
+    query strings, embedded credentials, or full paths leak through
+    scan_events into frontend responses or logs.
+    """
+    if not message:
+        return message
+
+    def _replace(match: re.Match[str]) -> str:
+        raw = match.group("url")
+        host = host_of(raw)
+        if host:
+            return host
+        return sanitize_url(raw)
+
+    return _URL_IN_MESSAGE_RE.sub(_replace, message)
 
 
 class ScanEventLogger:
@@ -49,7 +79,7 @@ class ScanEventLogger:
             sequence=self._next_sequence,
             phase=phase,
             event_type=event_type,
-            message=message,
+            message=_sanitize_message(message),
             metadata_json=sanitize_metadata(metadata) or None,
         )
         self._next_sequence += 1
