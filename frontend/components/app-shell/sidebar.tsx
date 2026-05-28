@@ -28,8 +28,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/accounts", label: "Accounts", icon: LayoutGrid, mvp: true },
   { href: "/outreach", label: "Outreach", icon: Megaphone, mvp: true },
   { href: "/imports", label: "Imports", icon: Upload, mvp: true },
-  { href: "/signals", label: "Signal feed", icon: Activity, mvp: false, comingSoon: true },
-  { href: "/scans", label: "Live scans", icon: Radar, mvp: false, comingSoon: true },
+  { href: "/signals", label: "Signal feed", icon: Activity, mvp: true },
+  { href: "/scans", label: "Live scans", icon: Radar, mvp: true },
   { href: "/settings", label: "Settings", icon: Settings, mvp: false, comingSoon: true },
 ];
 
