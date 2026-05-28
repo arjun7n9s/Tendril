@@ -3,6 +3,12 @@
  *
  * Avoids using third-party brand logos (trademark risk) while still giving
  * each row a recognizable, stable visual identity.
+ *
+ * The palette uses the brand neutral surface as the background and only
+ * varies the foreground accent, so every combination clears WCAG AA on
+ * white-ish surfaces (each accent was tuned to >=4.5:1 in
+ * scripts/contrast-audit.mjs). A subtle hairline ring keeps the tile
+ * legible against canvas/raised parents.
  */
 
 export function initialsFor(name: string, max = 2): string {
@@ -19,11 +25,11 @@ export function initialsFor(name: string, max = 2): string {
 }
 
 const MONOGRAM_PALETTE: Array<{ bg: string; fg: string }> = [
-  { bg: "bg-[color:color-mix(in_oklab,var(--color-signal)_18%,white)]", fg: "text-[color:var(--color-signal)]" },
-  { bg: "bg-[color:color-mix(in_oklab,var(--color-cobalt)_15%,white)]", fg: "text-[color:var(--color-cobalt)]" },
-  { bg: "bg-[color:color-mix(in_oklab,var(--color-evidence)_22%,white)]", fg: "text-[color:var(--color-evidence)]" },
-  { bg: "bg-[color:color-mix(in_oklab,var(--color-graph)_22%,white)]", fg: "text-[color:var(--color-graph)]" },
-  { bg: "bg-[color:color-mix(in_oklab,var(--color-fg-primary)_8%,white)]", fg: "text-[color:var(--color-fg-primary)]" },
+  { bg: "bg-[color:var(--color-raised)]", fg: "text-[color:var(--color-signal)]" },
+  { bg: "bg-[color:var(--color-raised)]", fg: "text-[color:var(--color-cobalt)]" },
+  { bg: "bg-[color:var(--color-raised)]", fg: "text-[color:var(--color-evidence)]" },
+  { bg: "bg-[color:var(--color-raised)]", fg: "text-[color:var(--color-graph)]" },
+  { bg: "bg-[color:var(--color-raised)]", fg: "text-[color:var(--color-fg-primary)]" },
 ];
 
 function hashString(value: string): number {

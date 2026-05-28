@@ -71,15 +71,14 @@ export default function RootLayout({
         <QueryProvider>{children}</QueryProvider>
         <Toaster
           position="bottom-right"
-          richColors
           closeButton
           duration={3500}
           offset={20}
           toastOptions={{
             classNames: {
               toast:
-                "rounded-[8px] border border-[color:var(--color-border-default)] shadow-[var(--shadow-overlay)] data-[type=success]:border-[color:color-mix(in_oklab,var(--color-signal)_30%,transparent)] data-[type=error]:border-[color:color-mix(in_oklab,var(--color-risk)_30%,transparent)]",
-              title: "text-[13px] font-semibold",
+                "rounded-[8px] border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] text-[color:var(--color-fg-primary)] shadow-[var(--shadow-overlay)] data-[type=success]:border-[color:color-mix(in_oklab,var(--color-signal)_30%,transparent)] data-[type=error]:border-[color:color-mix(in_oklab,var(--color-risk)_30%,transparent)]",
+              title: "text-[13px] font-semibold text-[color:var(--color-fg-primary)]",
               description: "text-[12px] text-[color:var(--color-fg-secondary)]",
             },
           }}
