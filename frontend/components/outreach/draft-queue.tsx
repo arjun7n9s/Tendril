@@ -1,7 +1,6 @@
 "use client";
 
-import { Megaphone } from "lucide-react";
-
+import { EmptyOutreachIllustration } from "@/components/illustrations";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { MonogramTile } from "@/components/primitives/monogram-tile";
 import { StatusChip } from "@/components/primitives/status-chip";
@@ -32,7 +31,12 @@ export function DraftQueue({ drafts, selectedId, onSelect, isLoading }: DraftQue
   if (drafts.length === 0) {
     return (
       <div className="p-4">
-        <EmptyState icon={Megaphone} title="No pending drafts" body={COPY.outreach.queueEmpty} />
+        <EmptyState
+          illustration={<EmptyOutreachIllustration />}
+          illustrationTone="evidence"
+          title="No pending drafts"
+          body={COPY.outreach.queueEmpty}
+        />
       </div>
     );
   }

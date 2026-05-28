@@ -1,9 +1,9 @@
 "use client";
 
-import { Radar } from "lucide-react";
 import Link from "next/link";
 
 import { TopCommandBar } from "@/components/app-shell/top-command-bar";
+import { EmptyAccountsIllustration } from "@/components/illustrations";
 import { MonogramTile } from "@/components/primitives/monogram-tile";
 import { StatusChip } from "@/components/primitives/status-chip";
 import { EmptyState } from "@/components/primitives/empty-state";
@@ -70,7 +70,8 @@ export function ScansPageClient() {
         />
         {accounts.length === 0 ? (
           <EmptyState
-            icon={Radar}
+            illustration={<EmptyAccountsIllustration />}
+            illustrationTone="neutral"
             title="No accounts yet"
             body="Import a seed CSV before running scans."
             action={

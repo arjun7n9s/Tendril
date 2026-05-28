@@ -1,6 +1,5 @@
 "use client";
 
-import { Activity } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
@@ -10,6 +9,10 @@ import { AccountScoreStrip } from "@/components/accounts/account-score-strip";
 import { TopCommandBar } from "@/components/app-shell/top-command-bar";
 import { AccountBriefPanel } from "@/components/briefs/account-brief-panel";
 import { EvidenceDrawerProvider } from "@/components/evidence/evidence-drawer-context";
+import {
+  EmptySignalsIllustration,
+  ErrorStateIllustration,
+} from "@/components/illustrations";
 import { AccountOutreachPreview } from "@/components/outreach/account-outreach-preview";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { SectionHeading } from "@/components/primitives/section-heading";
@@ -85,7 +88,8 @@ export function AccountDetailClient({ accountId }: Props) {
         <TopCommandBar title="Account" />
         <div className="px-6 py-10">
           <EmptyState
-            icon={Activity}
+            illustration={<ErrorStateIllustration />}
+            illustrationTone="risk"
             title="Account not found"
             body="The requested account does not exist or the backend is unreachable."
             action={
@@ -154,7 +158,8 @@ export function AccountDetailClient({ accountId }: Props) {
 
               {recent_signals.length === 0 ? (
                 <EmptyState
-                  icon={Activity}
+                  illustration={<EmptySignalsIllustration />}
+                  illustrationTone="cobalt"
                   title="No signals yet"
                   body="Run a live scan to discover hiring, migration, and champion changes for this account."
                   action={

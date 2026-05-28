@@ -1,12 +1,16 @@
 "use client";
 
-import { Activity, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
 import { TopCommandBar } from "@/components/app-shell/top-command-bar";
 import { EvidenceDrawerProvider } from "@/components/evidence/evidence-drawer-context";
+import {
+  EmptySignalsIllustration,
+  ErrorStateIllustration,
+} from "@/components/illustrations";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { MonogramTile } from "@/components/primitives/monogram-tile";
 import { SignalCard } from "@/components/signals/signal-card";
@@ -115,7 +119,8 @@ export function SignalsPageClient() {
 
         {signalsQuery.isError ? (
           <EmptyState
-            icon={Activity}
+            illustration={<ErrorStateIllustration />}
+            illustrationTone="risk"
             title="Could not load signals"
             body="Make sure the Tendril backend is running on port 8000."
           />
@@ -127,7 +132,8 @@ export function SignalsPageClient() {
           </div>
         ) : grouped.length === 0 ? (
           <EmptyState
-            icon={Activity}
+            illustration={<EmptySignalsIllustration />}
+            illustrationTone="cobalt"
             title="No signals match"
             body={
               filtersApplied

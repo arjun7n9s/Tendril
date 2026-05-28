@@ -1,9 +1,9 @@
 "use client";
 
-import { Megaphone } from "lucide-react";
 import { useState } from "react";
 
 import { TopCommandBar } from "@/components/app-shell/top-command-bar";
+import { EmptyOutreachIllustration } from "@/components/illustrations";
 import { DraftEditor } from "@/components/outreach/draft-editor";
 import { DraftQueue } from "@/components/outreach/draft-queue";
 import { GuardrailPanel } from "@/components/outreach/guardrail-panel";
@@ -48,7 +48,8 @@ export function OutreachCockpitClient() {
             <DraftEditor key={draftQuery.data.id} draft={draftQuery.data} />
           ) : (
             <EmptyState
-              icon={Megaphone}
+              illustration={<EmptyOutreachIllustration />}
+              illustrationTone="evidence"
               title="No pending drafts"
               body={COPY.outreach.queueEmpty}
             />

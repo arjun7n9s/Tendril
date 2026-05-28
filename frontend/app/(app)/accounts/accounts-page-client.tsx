@@ -8,6 +8,10 @@ import { AccountFilterBar } from "@/components/accounts/account-filter-bar";
 import { AccountKpiStrip } from "@/components/accounts/account-kpi-strip";
 import { AccountTable } from "@/components/accounts/account-table";
 import { TopCommandBar } from "@/components/app-shell/top-command-bar";
+import {
+  EmptyAccountsIllustration,
+  ErrorStateIllustration,
+} from "@/components/illustrations";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { Button } from "@/components/ui/button";
 import { COPY } from "@/lib/copy";
@@ -65,14 +69,16 @@ export function AccountsPageClient() {
 
           {accountsQuery.isError ? (
             <EmptyState
-              icon={LayoutGrid}
+              illustration={<ErrorStateIllustration />}
+              illustrationTone="risk"
               title="Could not load accounts"
               body="Make sure the Tendril backend is running on port 8000."
             />
           ) : rows.length === 0 && !accountsQuery.isLoading ? (
             isPriming ? (
               <EmptyState
-                icon={LayoutGrid}
+                illustration={<EmptyAccountsIllustration />}
+                illustrationTone="cobalt"
                 title="Loading demo seed"
                 body="Priming the workspace with five seeded accounts and prior champions."
               />
@@ -84,7 +90,8 @@ export function AccountsPageClient() {
               />
             ) : (
               <EmptyState
-                icon={LayoutGrid}
+                illustration={<EmptyAccountsIllustration />}
+                illustrationTone="neutral"
                 title={COPY.empty.accountsTitle}
                 body={COPY.empty.accountsBody}
                 action={
