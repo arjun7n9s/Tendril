@@ -21,6 +21,7 @@ If you want to follow how the product was specified before any code was written,
 8. `kiro-frontend-assets-plan.md` — the asset inventory: brand, fonts, icons, illustrations, integration logos, copy library.
 9. `kiro-external-credentials-required.md` — the partner credentials Tendril uses (Bright Data, AI/ML API, Cognee, optional Triggerware/Speechmatics).
 10. `kiro-external-credentials-usage-guide.md` — how those credentials are wired into the running system.
+11. `kiro-deployment-cognee-setup-plan.md` — demo-safe deployment plan plus the local/self-hosted Cognee setup.
 
 ## Conventions used across the docs
 
