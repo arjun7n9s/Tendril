@@ -1,3 +1,8 @@
+"use client";
+
+import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+
 import { cn } from "@/lib/utils/cn";
 import { scoreTier, scoreTierAccent, type ScoreTier } from "@/lib/utils/score";
 import type { ScoreRead } from "@/lib/types";
@@ -24,8 +29,28 @@ export function ScoreRing({
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference - (value / 100) * circumference;
 
+  // Trigger a one-off scale flourish whenever the score crosses into
+  // sales-ready. Cheap, clear visual feedback for a successful scan.
+  const reduce = useReducedMotion();
+  const previousTier = useRef<ScoreTier>(tier);
+  const [pulseKey, setPulseKey] = useState(0);
+  useEffect(() => {
+    if (previousTier.current !== "sales-ready" && tier === "sales-ready") {
+      setPulseKey((n) => n + 1);
+    }
+    previousTier.current = tier;
+  }, [tier]);
+
   return (
-    <div
+    <motion.div
+      key={pulseKey}
+      initial={false}
+      animate={
+        reduce || pulseKey === 0
+          ? undefined
+          : { scale: [1, 1.06, 1] }
+      }
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className={cn("relative inline-flex items-center justify-center", className)}
       style={{ width: size, height: size }}
     >
@@ -62,6 +87,6 @@ export function ScoreRing({
           <span className={cn("text-[9px] tracking-wider uppercase", accent.fg)}>/100</span>
         </div>
       ) : null}
-    </div>
+    </motion.div>
   );
 }

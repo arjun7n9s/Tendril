@@ -1,10 +1,15 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { motion, useReducedMotion } from "framer-motion";
 import { Radar } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
+import {
+  ScanCompleteIllustration,
+  ScanFailedIllustration,
+} from "@/components/illustrations";
 import { MetricTile } from "@/components/primitives/metric-tile";
 import { Button } from "@/components/ui/button";
 import {
@@ -172,17 +177,57 @@ function PanelBody({ scan }: { scan: ScanRead | null }) {
       </div>
 
       {scan.status === "failed" ? (
-        <div className="rounded-[var(--radius-card)] border border-[color:color-mix(in_oklab,var(--color-risk)_30%,transparent)] bg-[color:var(--color-risk-soft)] p-3 text-[12px] text-[color:var(--color-risk)]">
-          {scan.error_message ?? "Scan failed."}
-        </div>
+        <ResultBanner tone="risk">
+          <ScanFailedIllustration className="size-10" />
+          <div>
+            <div className="text-[13px] font-semibold">Scan failed</div>
+            <p className="text-[12px] opacity-90">
+              {scan.error_message ?? "Try running the scan again."}
+            </p>
+          </div>
+        </ResultBanner>
       ) : null}
 
       {scan.status === "completed" ? (
-        <div className="rounded-[var(--radius-card)] border border-[color:color-mix(in_oklab,var(--color-signal)_30%,transparent)] bg-[color:var(--color-signal-soft)] p-3 text-[12px] text-[color:var(--color-signal)]">
-          Intelligence ready. The account brief and any sales-ready outreach drafts have been
-          refreshed.
-        </div>
+        <ResultBanner tone="signal">
+          <ScanCompleteIllustration className="size-10" />
+          <div>
+            <div className="text-[13px] font-semibold">Intelligence ready</div>
+            <p className="text-[12px] opacity-90">
+              The account brief and any sales-ready outreach drafts have been refreshed.
+            </p>
+          </div>
+        </ResultBanner>
       ) : null}
     </div>
+  );
+}
+
+function ResultBanner({
+  tone,
+  children,
+}: {
+  tone: "signal" | "risk";
+  children: React.ReactNode;
+}) {
+  const reduce = useReducedMotion();
+  const palette =
+    tone === "signal"
+      ? "border-[color:color-mix(in_oklab,var(--color-signal)_30%,transparent)] bg-[color:var(--color-signal-soft)] text-[color:var(--color-signal)]"
+      : "border-[color:color-mix(in_oklab,var(--color-risk)_30%,transparent)] bg-[color:var(--color-risk-soft)] text-[color:var(--color-risk)]";
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 6, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        type: "spring",
+        stiffness: 320,
+        damping: 28,
+        mass: 0.6,
+      }}
+      className={`flex items-center gap-3 rounded-[var(--radius-card)] border p-3 ${palette}`}
+    >
+      {children}
+    </motion.div>
   );
 }

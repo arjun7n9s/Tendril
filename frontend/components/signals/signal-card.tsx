@@ -7,6 +7,7 @@ import {
   Compass,
   Cpu,
   Crosshair,
+  ExternalLink,
   Flame,
   type LucideIcon,
   Quote,
@@ -123,7 +124,19 @@ export function SignalCard({ signal }: SignalCardProps) {
       ) : null}
 
       <footer className="flex items-center justify-between border-t border-[color:var(--color-border-default)] pt-2">
-        <span className="text-[11px] text-[color:var(--color-fg-muted)]">{evidenceHost}</span>
+        <a
+          href={signal.evidence_url}
+          target="_blank"
+          rel="noreferrer"
+          className="group/source inline-flex items-center gap-1 text-[11px] text-[color:var(--color-fg-muted)] transition-colors hover:text-[color:var(--color-fg-primary)] focus-visible:text-[color:var(--color-fg-primary)]"
+          aria-label={`Open original source ${evidenceHost} in a new tab`}
+        >
+          {evidenceHost}
+          <ExternalLink
+            className="size-3 opacity-0 transition-opacity group-hover/source:opacity-100 group-focus-visible/source:opacity-100"
+            aria-hidden
+          />
+        </a>
         <div className="flex items-center gap-1.5">
           <Button
             variant="ghost"

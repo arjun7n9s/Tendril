@@ -1,7 +1,8 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
 import { Check, Save, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { StatusChip } from "@/components/primitives/status-chip";
 import { Button } from "@/components/ui/button";
@@ -39,11 +40,35 @@ export function DraftEditor({ draft }: DraftEditorProps) {
 
   const isTerminal = draft.status === "approved" || draft.status === "rejected";
 
+  // Pulse the status chip when the draft transitions to a terminal
+  // state. Subtle, single-shot, respects reduced motion.
+  const reduce = useReducedMotion();
+  const previousStatus = useRef(draft.status);
+  const [pulseKey, setPulseKey] = useState(0);
+  useEffect(() => {
+    if (previousStatus.current !== draft.status && isTerminal) {
+      setPulseKey((n) => n + 1);
+    }
+    previousStatus.current = draft.status;
+  }, [draft.status, isTerminal]);
+
   return (
     <div className="flex h-full flex-col gap-4">
       <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
-          <StatusChip kind="outreach" value={draft.status} />
+          <motion.span
+            key={pulseKey}
+            initial={false}
+            animate={
+              reduce || pulseKey === 0
+                ? undefined
+                : { scale: [1, 1.08, 1] }
+            }
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="inline-flex"
+          >
+            <StatusChip kind="outreach" value={draft.status} />
+          </motion.span>
           <span className="text-[12px] tracking-[0.04em] text-[color:var(--color-fg-muted)] uppercase">
             Draft #{draft.id.slice(-6)}
           </span>
