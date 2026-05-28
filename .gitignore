@@ -16,3 +16,5 @@ backend/.venv/
 backend/.pytest_cache/
 backend/var/
 backend/signalgraph.db
+.vscode/
+.idea/
