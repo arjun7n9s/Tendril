@@ -1,0 +1,13 @@
+record_type,account_name,account_domain,industry,company_size,person_name,title,email,previous_company,role_type,github_url,personal_site_url,tech_keywords,outcome_notes
+target_account,Ramp,ramp.com,fintech,1001-5000,,,,,,,,"Kafka, Snowflake, dbt, Airflow, observability","Strong public eng blog and active careers page; data platform modernization signals"
+target_account,Plaid,plaid.com,fintech,1001-5000,,,,,,,,"Postgres, Kafka, Snowflake, ClickHouse, compliance, data quality","Compliance-heavy data workflows; public engineering content"
+target_account,Vercel,vercel.com,dev-tools,501-1000,,,,,,,,"Next.js, edge runtime, observability, Postgres, Redis","Public docs, blog, GitHub presence"
+target_account,Shopify,shopify.com,retail-tech,5001-10000,,,,,,,,"Kafka, MySQL, Rails, Lakehouse, real-time analytics","Massive public eng blog and GitHub repos"
+target_account,Oscar Health,hioscar.com,healthtech,1001-5000,,,,,,,,"Snowflake, Airflow, dbt, HIPAA, compliance, data warehouse","Heavy data + compliance workload, public careers and blog"
+customer_account,Alpaca,alpaca.markets,fintech,201-500,,,,,,,,"Kafka, Postgres, Snowflake, dbt, observability","Reference customer pattern: fintech data team using our stack"
+customer_account,Brex,brex.com,fintech,1001-5000,,,,,,,,"Snowflake, dbt, Airflow, Kafka","Reference customer with fintech compliance pressure"
+icp_example,,,fintech,201-1000,,,,,,,,"Snowflake, Kafka, dbt, Airflow, observability, compliance, data quality, data reliability, data platform","Best-customer pattern: fintech data teams with reliability and compliance pressure"
+icp_example,,,dev-tools,201-1000,,,,,,,,"Postgres, Kafka, telemetry, observability, data platform, edge","Dev-tools with data infra pain"
+champion,Ramp,ramp.com,,,Maya Chen,Senior Data Platform Engineer,maya.chen@example.com,Alpaca,champion,https://github.com/mayachen-example,https://maya.example.com/,"Kafka, Snowflake, dbt, observability","Past power user at Alpaca; recently moved to Ramp"
+champion,Plaid,plaid.com,,,Daniel Park,Staff Software Engineer Data,daniel.park@example.com,Brex,champion,https://github.com/danielpark-example,,"Snowflake, dbt, Airflow","Past Brex data team member; now at Plaid"
+champion,Vercel,vercel.com,,,Priya Raman,Engineering Manager Platform,priya.raman@example.com,Alpaca,champion,,https://priyaraman.example.com/,"Postgres, Kafka, observability","Former Alpaca platform lead; now at Vercel"

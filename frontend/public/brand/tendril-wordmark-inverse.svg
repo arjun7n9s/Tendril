@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none">
+  <g stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 28 C 11 18, 16 14, 22 14 S 28 18, 26 23 C 24.4 27, 19 27, 18 23 C 17.2 19.6, 20.5 18, 22 20" />
+    <circle cx="22" cy="20" r="1.6" fill="#FFFFFF" stroke="none" />
+  </g>
+  <text x="46" y="28" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" letter-spacing="-0.02em" fill="#FFFFFF">Tendril</text>
+</svg>
