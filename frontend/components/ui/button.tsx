@@ -53,6 +53,22 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
   ref,
 ) {
   const Component = asChild ? Slot : "button";
+  // When `asChild` is true, Slot requires a single child element. We
+  // therefore can't inject a loading spinner alongside the consumer's
+  // child. The loading flag still toggles `disabled` so the click is
+  // suppressed, which is the more important behavior.
+  if (asChild) {
+    return (
+      <Component
+        ref={ref}
+        className={cn(buttonVariants({ variant, size }), className)}
+        {...(loading || disabled ? { "aria-disabled": true } : null)}
+        {...props}
+      >
+        {children}
+      </Component>
+    );
+  }
   return (
     <Component
       ref={ref}
