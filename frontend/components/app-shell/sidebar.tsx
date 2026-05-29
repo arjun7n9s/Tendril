@@ -9,6 +9,7 @@ import {
   Megaphone,
   Radar,
   Settings,
+  Sunrise,
   Upload,
   Sun,
   Moon,
@@ -30,6 +31,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
+  { href: "/today", label: "Today", icon: Sunrise, mvp: true },
   { href: "/accounts", label: "Accounts", icon: LayoutGrid, mvp: true },
   { href: "/outreach", label: "Outreach", icon: Megaphone, mvp: true },
   { href: "/imports", label: "Imports", icon: Upload, mvp: true },
@@ -60,7 +62,7 @@ export function Sidebar() {
       )}
     >
       <Link
-        href="/accounts"
+        href="/today"
         className="flex h-12 items-center gap-2 px-4 text-[15px] font-semibold tracking-[-0.015em] text-fg-primary hover:opacity-90 transition-opacity"
       >
         <span aria-hidden className="text-fg-primary">

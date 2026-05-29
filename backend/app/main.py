@@ -18,6 +18,7 @@ from app.api import (
     outreach,
     scans,
     signals,
+    today,
     watchtower,
 )
 from app.config import get_settings
@@ -84,6 +85,7 @@ def create_app() -> FastAPI:
     app.include_router(media_scans.router)
     app.include_router(notifications.router)
     app.include_router(watchtower.router)
+    app.include_router(today.router)
 
     return app
 

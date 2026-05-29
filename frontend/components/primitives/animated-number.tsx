@@ -22,9 +22,13 @@ export function AnimatedNumber({ value, durationMs = 700, className }: AnimatedN
 
   useEffect(() => {
     if (reduce) {
-      setDisplay(value);
+      // Snap on the next frame (not synchronously) so we don't trigger a
+      // cascading render from within the effect body.
       fromRef.current = value;
-      return;
+      rafRef.current = requestAnimationFrame(() => setDisplay(value));
+      return () => {
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      };
     }
     const from = fromRef.current;
     const to = value;

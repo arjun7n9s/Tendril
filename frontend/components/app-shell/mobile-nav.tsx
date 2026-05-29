@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, LayoutGrid, Megaphone, Menu, Radar, Settings, Upload } from "lucide-react";
+import { Activity, LayoutGrid, Megaphone, Menu, Radar, Settings, Sunrise, Upload } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { cn } from "@/lib/utils/cn";
 
 const NAV = [
+  { href: "/today", label: "Today", icon: Sunrise },
   { href: "/accounts", label: "Accounts", icon: LayoutGrid },
   { href: "/outreach", label: "Outreach", icon: Megaphone },
   { href: "/imports", label: "Imports", icon: Upload },
@@ -25,7 +26,7 @@ export function MobileNav() {
     <>
       <header className="md:hidden sticky top-0 z-30 flex h-12 items-center justify-between border-b border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] px-3">
         <Link
-          href="/accounts"
+          href="/today"
           className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em] text-[color:var(--color-fg-primary)]"
         >
           <Glyph />

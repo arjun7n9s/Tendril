@@ -96,18 +96,22 @@ evidence. Full suite 134/134.
 
 **Verified:** tsc clean; production build clean.
 
-### Phase 5 — "Today" home feed 🟡
+### Phase 5 — "Today" home feed ✅
 **Why:** `product-analysis §4.2.D`. The product promises a daily queue; the app
-opens to a table.
+opened to a table.
 
-**Plan:**
-- Backend `/api/v1/today`: accounts that became actionable recently (new
-  sales-ready, score jumps, fresh high-value signals) ranked with one-line why.
-- New `/` route with an opinionated, prioritized feed; sidebar default.
+**Done:**
+- Backend `GET /api/v1/today`: ranks accounts by unified snapshot score, with
+  boosts for fresh spoken evidence, recency, and sales-ready; each item carries
+  a one-line why-now (spoken signal summary or brief why-now) and reason tags.
+- New `/today` route with an opinionated, ranked feed (rank, monogram, tags,
+  why-now, score, "+N spoken"). Set as the sidebar default and the root
+  redirect target; added to mobile nav.
 
-**Verify:** endpoint test; tsc + build.
+**Verified:** 3 endpoint tests (empty, ranked after web scan, spoken evidence
+surfaced); tsc + eslint + production build clean (`/today` registered).
 
-### Phase 6 — Evidence drawer elevation ⬜
+### Phase 6 — Evidence drawer elevation 🟡
 **Why:** `product-analysis §4.2.E`. Make "proof" the signature interaction.
 
 **Plan:**
@@ -135,3 +139,5 @@ Define named transitions + a strict elevation scale; apply app-wide.
   account detail returns the modality-aware headline score. 134/134 suite green.
 - Phase 4 done: `AnimatedNumber` + score-strip reads the snapshot, animates the
   total, shows "+N from spoken evidence". tsc + build clean.
+- Phase 5 done: `/api/v1/today` ranked feed + opinionated `/today` home (now the
+  default landing). 3 endpoint tests green; frontend tsc/eslint/build clean.
