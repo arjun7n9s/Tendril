@@ -2,20 +2,25 @@
 
 from __future__ import annotations
 
+import asyncio
 import sys
 from pathlib import Path
 
+from app.config import get_settings
 from app.services.cognee_memory import CogneeMemoryService
 from app.services.memory_service import MemoryPacket
 
 
 class FakeCognee:
-    def __init__(self, *, fail_remember: bool = False) -> None:
+    def __init__(self, *, fail_remember: bool = False, slow_remember: bool = False) -> None:
         self.fail_remember = fail_remember
+        self.slow_remember = slow_remember
         self.remember_calls = []
         self.recall_calls = []
 
     async def remember(self, data, **kwargs):
+        if self.slow_remember:
+            await asyncio.sleep(10)
         if self.fail_remember:
             raise RuntimeError("cognee down")
         self.remember_calls.append((data, kwargs))
@@ -81,3 +86,20 @@ def test_cognee_memory_falls_back_to_jsonl_on_write_failure(tmp_path: Path, monk
     fallback_path = tmp_path / "fallback" / "scan_scan_a.jsonl"
     assert fallback_path.exists()
     assert "Expansion signal" in fallback_path.read_text(encoding="utf-8")
+
+
+def test_cognee_memory_falls_back_to_jsonl_on_write_timeout(
+    tmp_path: Path, monkeypatch
+) -> None:
+    fake = FakeCognee(slow_remember=True)
+    monkeypatch.setitem(sys.modules, "cognee", fake)
+    monkeypatch.setenv("COGNEE_OPERATION_TIMEOUT_SECONDS", "1")
+    get_settings.cache_clear()
+    svc = CogneeMemoryService(dataset_prefix="signalgraph", fallback_dir=tmp_path)
+
+    svc.remember(_packet())
+
+    fallback_path = tmp_path / "fallback" / "scan_scan_a.jsonl"
+    assert fallback_path.exists()
+    assert "Expansion signal" in fallback_path.read_text(encoding="utf-8")
+    get_settings.cache_clear()

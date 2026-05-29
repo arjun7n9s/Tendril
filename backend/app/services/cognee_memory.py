@@ -52,6 +52,7 @@ class CogneeMemoryService:
         )
 
     def remember(self, packet: MemoryPacket) -> str:
+        settings = get_settings()
         dataset = packet.dataset or f"{self.dataset_prefix}_signals"
         try:
             _run_async(
@@ -60,7 +61,8 @@ class CogneeMemoryService:
                     dataset_name=dataset,
                     self_improvement=False,
                     run_in_background=False,
-                )
+                ),
+                timeout_seconds=settings.cognee_operation_timeout_seconds,
             )
             self._emit_write(packet, dataset)
             return packet.title
@@ -68,6 +70,7 @@ class CogneeMemoryService:
             return self._fallback.remember(packet)
 
     def query(self, question: str, *, limit: int = 5) -> list[MemoryHit]:
+        settings = get_settings()
         dataset = f"{self.dataset_prefix}_signals"
         try:
             raw_results = _run_async(
@@ -76,7 +79,8 @@ class CogneeMemoryService:
                     datasets=[dataset],
                     top_k=limit,
                     only_context=True,
-                )
+                ),
+                timeout_seconds=settings.cognee_operation_timeout_seconds,
             )
         except Exception:
             return self._fallback.query(question, limit=limit)
@@ -167,11 +171,12 @@ def _packet_to_text(packet: MemoryPacket) -> str:
     return "\n".join(fields)
 
 
-def _run_async(awaitable: Awaitable[Any]) -> Any:
+def _run_async(awaitable: Awaitable[Any], *, timeout_seconds: int) -> Any:
+    timeout = max(1, timeout_seconds)
     try:
         asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(awaitable)
+        return asyncio.run(asyncio.wait_for(awaitable, timeout=timeout))
 
     result: dict[str, Any] = {}
 
@@ -183,7 +188,9 @@ def _run_async(awaitable: Awaitable[Any]) -> Any:
 
     thread = threading.Thread(target=runner, daemon=True)
     thread.start()
-    thread.join()
+    thread.join(timeout)
+    if thread.is_alive():
+        raise TimeoutError(f"cognee operation exceeded {timeout}s")
     if "error" in result:
         raise result["error"]
     return result.get("value")

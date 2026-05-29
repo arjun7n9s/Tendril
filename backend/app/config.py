@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     cognee_api_key: str = Field(default="")
     cognee_api_url: str = Field(default="")
     cognee_dataset_prefix: str = Field(default="signalgraph")
+    cognee_operation_timeout_seconds: int = Field(default=20)
 
     # Optional integrations
     triggerware_api_key: str = Field(default="")
