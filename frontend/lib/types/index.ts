@@ -8,3 +8,4 @@ export * from "./notification";
 export * from "./outreach";
 export * from "./scan";
 export * from "./signal";
+export * from "./watchtower";

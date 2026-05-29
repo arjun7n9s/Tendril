@@ -7,4 +7,5 @@ export * as notificationsApi from "./notifications";
 export * as outreachApi from "./outreach";
 export * as scansApi from "./scans";
 export * as signalsApi from "./signals";
+export * as watchtowerApi from "./watchtower";
 export { api, ApiError, API_BASE_URL } from "./client";

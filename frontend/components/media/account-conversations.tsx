@@ -20,6 +20,7 @@ import { ConversationDrawerProvider } from "./conversation-drawer-context";
 import { ConversationSignalCard } from "./conversation-signal-card";
 import { MediaScanPanel } from "./media-scan-panel";
 import { MediaSourceList } from "./media-source-list";
+import { WatchToggle } from "./watch-toggle";
 
 type AccountConversationsProps = {
   accountId: string;
@@ -72,6 +73,7 @@ export function AccountConversations({
           }
           action={
             <div className="flex items-center gap-2">
+              <WatchToggle accountId={accountId} />
               {activeScanId ? (
                 <Button
                   variant="ghost"
