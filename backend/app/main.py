@@ -8,7 +8,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import accounts, briefs, health, imports, outreach, scans, signals
+from app.api import (
+    accounts,
+    briefs,
+    health,
+    imports,
+    media_scans,
+    notifications,
+    outreach,
+    scans,
+    signals,
+)
 from app.config import get_settings
 from app.db import init_db
 from app.logging_setup import configure_logging, get_logger
@@ -26,6 +36,8 @@ async def lifespan(app: FastAPI):
         mock_mode=settings.signalgraph_mock_mode,
         bright_data_rest=settings.bright_data_rest_configured(),
         aiml_api=settings.aiml_configured(),
+        featherless=settings.featherless_configured(),
+        speechmatics=settings.speechmatics_configured(),
         cognee=settings.cognee_configured(),
         version=__version__,
     )
@@ -63,6 +75,9 @@ def create_app() -> FastAPI:
     app.include_router(signals.router)
     app.include_router(briefs.router)
     app.include_router(outreach.router)
+    # Multimodal signal engine
+    app.include_router(media_scans.router)
+    app.include_router(notifications.router)
 
     return app
 
