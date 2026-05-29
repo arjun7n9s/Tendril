@@ -37,6 +37,18 @@
       "discovery_query": "{account_name} reliability webinar"
     },
     {
+      "source_url": "https://podcasts.example.com/{account_handle}-eng-podcast-replay",
+      "source_type": "podcast",
+      "title": "{account_name} Data Platform Deep Dive (Podcast Re-release)",
+      "description": "A podcast re-release of the same {account_name} engineering conversation, distributed via a different network. Used to demonstrate content-addressable dedup: same spoken content, different URL and publisher.",
+      "publisher": "Stack Chats Network",
+      "speaker_names": ["VP Engineering", "Staff Data Engineer"],
+      "published_offset_days": -11,
+      "duration_seconds": 2640,
+      "transcript_available": true,
+      "discovery_query": "{account_name} engineering podcast replay"
+    },
+    {
       "source_url": "https://conf.example.com/{account_handle}-keynote-2024",
       "source_type": "conference",
       "title": "{account_name} Platform Keynote",

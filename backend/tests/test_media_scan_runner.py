@@ -162,6 +162,76 @@ def test_cas_dedup_reuses_transcript(client: TestClient, seeded_account: str) ->
     assert second_status["counts"]["cache_hits"] >= 1
 
 
+def test_cas_content_dedup_across_different_urls(
+    client: TestClient, seeded_account: str
+) -> None:
+    """True content addressing: the same episode at two different URLs hashes
+    to the same media_asset, so transcription is paid for only once."""
+    from app.models.account import Account
+    from app.models.enums import MediaScanMode, MediaScanStage, MediaSourceType
+    from app.models.media_scan_job import MediaScanJob
+    from app.models.media_source import MediaSource
+    from app.services.media_resolution import resolve_and_hash
+    from app.services.media_scan_events import MediaScanEventLogger
+
+    SessionLocal = get_sessionmaker()
+    with SessionLocal() as db:
+        account = db.get(Account, seeded_account)
+        job = MediaScanJob(
+            account_id=account.id,
+            mode=MediaScanMode.mock,
+            status=MediaScanStage.queued,
+            current_stage=MediaScanStage.queued,
+            stage_state_json={},
+        )
+        db.add(job)
+        db.flush()
+        events = MediaScanEventLogger(db, job.id)
+
+        # Two sources that resolve to the same spoken content (the eng-podcast
+        # fixture) but live at different URLs / publishers.
+        primary = MediaSource(
+            account_id=account.id,
+            media_scan_job_id=job.id,
+            source_url="https://www.youtube.com/watch?v=ramp-eng-podcast",
+            source_type=MediaSourceType.youtube,
+            transcript_available=True,
+        )
+        alias = MediaSource(
+            account_id=account.id,
+            media_scan_job_id=job.id,
+            source_url="https://podcasts.example.com/ramp-eng-podcast-replay",
+            source_type=MediaSourceType.podcast,
+            transcript_available=True,
+        )
+        db.add_all([primary, alias])
+        db.flush()
+
+        r1 = resolve_and_hash(db, source=primary, events=events)
+        # Simulate the first transcript existing so the alias is a true cache hit.
+        from app.models.transcript import Transcript
+        from app.models.enums import TranscriptProvider, TranscriptionStatus as TS
+
+        tr = Transcript(
+            media_asset_id=r1.media_asset.id,
+            provider=TranscriptProvider.existing_transcript,
+            segments_json=[{"start": 1.0, "end": 2.0, "speaker": "A", "text": "hi"}],
+        )
+        db.add(tr)
+        db.flush()
+        r1.media_asset.transcript_id = tr.id
+        r1.media_asset.transcription_status = TS.completed
+        db.add(r1.media_asset)
+        db.flush()
+
+        r2 = resolve_and_hash(db, source=alias, events=events)
+
+        # Same content hash, same asset, and the alias is a cache hit.
+        assert r1.media_asset.media_hash == r2.media_asset.media_hash
+        assert r1.media_asset.id == r2.media_asset.id
+        assert r2.cache_hit is True
+
+
 def test_resume_from_failed_stage(
     client: TestClient, seeded_account: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:

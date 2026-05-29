@@ -1,10 +1,11 @@
 """Media resolution + content-addressable storage (CAS).
 
 Resolves the cheapest legal/reliable path to a transcript for a source, then
-computes a SHA-256 `media_hash` that becomes the durable identity of the audio.
-If a `media_asset` already exists for that hash, its transcript is reused and
-transcription is skipped entirely — the same episode is never transcribed
-twice, even across different accounts.
+computes a SHA-256 `media_hash` over the *resolved content itself* — not the
+URL. This is true content addressing: two different URLs that point at the same
+episode (e.g. a YouTube link and a podcast RSS enclosure of the same talk)
+hash to the same value, so the second one is a cache hit and transcription is
+paid for exactly once, even across accounts.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from app.models.enums import (
 )
 from app.models.media_asset import MediaAsset
 from app.models.media_source import MediaSource
+from app.services.media_fixtures import fixture_key_for_url, load_transcript
 from app.services.media_scan_events import MediaScanEventLogger
 from app.services.url_utils import host_of
 
@@ -36,19 +38,49 @@ class ResolvedMedia:
     resolution_path: str  # existing_transcript | captions | rss_audio | download
 
 
-def _compute_media_hash(source: MediaSource) -> str:
-    """Compute a stable content hash for the source's media.
+def _normalize_transcript_text(segments: list[dict]) -> str:
+    """Stable, order-preserving text projection of transcript segments.
 
-    In a live deployment this hashes the normalized downloaded audio bytes.
-    Here we derive a deterministic hash from the canonical media identity
-    (url + duration), which is stable across accounts referencing the same
-    episode — exactly the dedup property CAS needs. A real byte-hash slots in
-    behind this same function without changing callers.
+    Speaker labels and timings can vary slightly between providers, so we hash
+    only the lowercased, whitespace-collapsed spoken words. That makes the hash
+    a fingerprint of *what was said*, which is what dedup should key on.
     """
+    parts: list[str] = []
+    for seg in segments:
+        text = (seg.get("text") or "").strip().lower()
+        if text:
+            parts.append(" ".join(text.split()))
+    return "\n".join(parts)
+
+
+def _content_hash(source: MediaSource) -> tuple[str, str]:
+    """Return (media_hash, basis_kind) for a source's resolved content.
+
+    Preference order mirrors the resolution order:
+    1. The episode's transcript text (available transcript / caption / fixture),
+       hashed as a content fingerprint — stable across differing URLs.
+    2. Fallback: the canonical media identity, used only when no transcript
+       content can be resolved cheaply (a real deployment hashes audio bytes
+       here instead).
+    """
+    fixture_key = fixture_key_for_url(source.source_url) or (
+        (source.metadata_json or {}).get("fixture_key") or ""
+    )
+    if fixture_key:
+        transcript = load_transcript(fixture_key)
+        if transcript is not None and transcript.segments:
+            normalized = _normalize_transcript_text(transcript.segments)
+            if normalized:
+                return (
+                    hashlib.sha256(normalized.encode("utf-8")).hexdigest(),
+                    "transcript_content",
+                )
+
+    # Fallback identity (no cheap transcript content available yet).
     canonical = (source.source_url or "").strip().lower()
     duration = source.duration_seconds or 0
     basis = f"{canonical}|{duration}"
-    return hashlib.sha256(basis.encode("utf-8")).hexdigest()
+    return hashlib.sha256(basis.encode("utf-8")).hexdigest(), "url_identity_fallback"
 
 
 def resolve_and_hash(
@@ -61,7 +93,7 @@ def resolve_and_hash(
 
     Returns the asset plus whether an existing transcript was reused.
     """
-    media_hash = _compute_media_hash(source)
+    media_hash, basis_kind = _content_hash(source)
 
     existing = db.scalar(select(MediaAsset).where(MediaAsset.media_hash == media_hash))
     if existing is not None:
@@ -71,9 +103,11 @@ def resolve_and_hash(
         db.flush()
         if cache_hit:
             events.cache_hit(
-                f"reusing cached transcript for {host_of(source.source_url) or 'media'}",
+                f"content match — reusing cached transcript for "
+                f"{host_of(source.source_url) or 'media'}",
                 stage=MediaScanStage.hash_media,
                 media_hash_prefix=media_hash[:12],
+                basis=basis_kind,
             )
         return ResolvedMedia(
             media_asset=existing,
@@ -111,5 +145,6 @@ def resolve_and_hash(
         stage=MediaScanStage.resolve_media,
         resolution_path=resolution_path,
         media_hash_prefix=media_hash[:12],
+        basis=basis_kind,
     )
     return ResolvedMedia(media_asset=asset, cache_hit=False, resolution_path=resolution_path)

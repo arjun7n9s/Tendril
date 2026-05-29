@@ -31,21 +31,22 @@ Guiding constraints:
 ### Phase 0 — Plan artifact ✅
 - This document. Commit + push.
 
-### Phase 1 — True content-addressable dedup (CAS) ⬜
+### Phase 1 — True content-addressable dedup (CAS) ✅
 **Why:** `product-analysis §3.1`. Hash was URL+duration, so the same episode at
 two URLs got transcribed twice — defeating the feature's core cost premise.
 
-**Plan:**
-- Hash the *cheap-to-fetch content* before the expensive transcribe stage:
-  transcript text for transcript-available sources (and the mock fixture text),
-  audio bytes for audio (live, future).
-- Two sources that resolve to the same episode → same `media_hash` → second is a
-  cache hit → transcription skipped.
-- Add a duplicate-episode mock source (same episode, different URL/publisher) to
-  prove cross-URL dedup in the demo.
+**Done:**
+- `media_resolution._content_hash` now hashes a normalized transcript-content
+  fingerprint (lowercased, whitespace-collapsed spoken words), falling back to
+  URL identity only when no cheap transcript content exists. Two URLs for the
+  same episode → same `media_hash` → cache hit → transcription skipped.
+- Added a duplicate-episode mock source (same content, different URL/publisher).
+- Added `ensure_schema()` in `db.py` for safe additive ADD COLUMN migrations on
+  the existing SQLite DB (needed by later phases).
 
-**Verify:** extend `test_media_scan_runner` CAS test to assert the aliased
-source reuses the transcript (no second transcript row).
+**Verified:** new `test_cas_content_dedup_across_different_urls` proves two
+different URLs resolve to one asset and the second is a cache hit; all 7 media
+tests pass.
 
 ### Phase 2 — Budget ceiling + cost telemetry ⬜
 **Why:** `product-analysis §3.3`. The feature is *about* cost; we had soft caps
@@ -117,3 +118,6 @@ Define named transitions + a strict elevation scale; apply app-wide.
 ## Progress log
 
 - (init) Plan created.
+- Phase 1 done: true content-addressable dedup (transcript-content hashing),
+  duplicate-episode fixture, `ensure_schema` migration helper. 7/7 media tests
+  green.
