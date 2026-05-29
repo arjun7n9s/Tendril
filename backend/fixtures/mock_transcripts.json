@@ -1,0 +1,65 @@
+{
+  "eng-podcast": {
+    "provider": "existing_transcript",
+    "language": "en",
+    "confidence": 0.93,
+    "segments": [
+      {
+        "start": 60.0,
+        "end": 78.5,
+        "speaker": "VP Engineering",
+        "text": "We're in the middle of migrating off our legacy batch pipelines onto Kafka and Snowflake. The goal is to cut our nightly job runtime and get to near real-time ingestion by the second quarter."
+      },
+      {
+        "start": 240.0,
+        "end": 262.0,
+        "speaker": "Staff Data Engineer",
+        "text": "Honestly the biggest pain has been data quality. We get paged constantly when a schema changes upstream, and we don't have good observability across the pipeline yet. That's the number one thing we want to fix this year."
+      },
+      {
+        "start": 610.0,
+        "end": 631.0,
+        "speaker": "VP Engineering",
+        "text": "We evaluated a couple of vendors for reliability tooling. We're not happy with our current monitoring stack and we have budget approved to replace it in the next two quarters."
+      },
+      {
+        "start": 905.0,
+        "end": 922.0,
+        "speaker": "Staff Data Engineer",
+        "text": "We're hiring aggressively for the data platform team, four roles open right now focused on streaming and reliability. You can reach me at engineer@example.com if you're interested."
+      }
+    ]
+  },
+  "earnings-q3": {
+    "provider": "existing_transcript",
+    "language": "en",
+    "confidence": 0.95,
+    "segments": [
+      {
+        "start": 120.0,
+        "end": 140.0,
+        "speaker": "CFO",
+        "text": "Revenue grew thirty-eight percent year over year, and we are increasing our investment in the data platform meaningfully in 2025 to support the new finance data product."
+      },
+      {
+        "start": 880.0,
+        "end": 902.0,
+        "speaker": "CEO",
+        "text": "The launch of our finance data product is our top company priority for the next two quarters. Operational readiness and compliance audit trails are critical to that initiative."
+      }
+    ]
+  },
+  "webinar-reliability": {
+    "provider": "speechmatics",
+    "language": "en",
+    "confidence": 0.88,
+    "segments": [
+      {
+        "start": 330.0,
+        "end": 351.0,
+        "speaker": "Director of Data Reliability",
+        "text": "We set hard data quality SLAs this year and we're actively shopping for an observability vendor. Our current tool can't keep up with streaming volume."
+      }
+    ]
+  }
+}

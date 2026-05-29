@@ -1,0 +1,52 @@
+{
+  "_default": [
+    {
+      "source_url": "https://www.youtube.com/watch?v={account_handle}-eng-podcast",
+      "source_type": "youtube",
+      "title": "Scaling {account_name}'s Data Platform — Engineering Deep Dive",
+      "description": "{account_name} engineering leaders discuss their migration off legacy pipelines, Kafka and Snowflake adoption, and reliability goals for the next year.",
+      "publisher": "DataEng Weekly",
+      "speaker_names": ["VP Engineering", "Staff Data Engineer"],
+      "published_offset_days": -12,
+      "duration_seconds": 2640,
+      "transcript_available": true,
+      "discovery_query": "{account_name} engineering podcast data platform"
+    },
+    {
+      "source_url": "https://podcasts.example.com/{account_handle}-earnings-q3",
+      "source_type": "earnings_call",
+      "title": "{account_name} Q3 Earnings Call",
+      "description": "Quarterly results call covering revenue growth, new finance data product launch, and 2025 platform investment priorities.",
+      "publisher": "Investor Relations",
+      "speaker_names": ["CFO", "CEO"],
+      "published_offset_days": -5,
+      "duration_seconds": 3300,
+      "transcript_available": true,
+      "discovery_query": "{account_name} earnings call transcript"
+    },
+    {
+      "source_url": "https://www.youtube.com/watch?v={account_handle}-webinar-reliability",
+      "source_type": "webinar",
+      "title": "Reliability at Scale with {account_name} — Live Webinar",
+      "description": "A practitioner webinar on data quality SLAs, observability tooling, and vendor evaluation for streaming reliability.",
+      "publisher": "Reliability Summit",
+      "speaker_names": ["Director of Data Reliability"],
+      "published_offset_days": -28,
+      "duration_seconds": 1980,
+      "transcript_available": false,
+      "discovery_query": "{account_name} reliability webinar"
+    },
+    {
+      "source_url": "https://conf.example.com/{account_handle}-keynote-2024",
+      "source_type": "conference",
+      "title": "{account_name} Platform Keynote",
+      "description": "Conference keynote touching on hiring plans and a brief product roadmap overview.",
+      "publisher": "FinTech Data Conf",
+      "speaker_names": ["CTO"],
+      "published_offset_days": -75,
+      "duration_seconds": 1500,
+      "transcript_available": false,
+      "discovery_query": "{account_name} conference keynote"
+    }
+  ]
+}

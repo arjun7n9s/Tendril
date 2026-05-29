@@ -1,0 +1,75 @@
+{
+  "_default": {
+    "eng-podcast": [
+      {
+        "signal_type": "migration",
+        "title": "Active migration to Kafka + Snowflake with Q2 timeline",
+        "summary": "VP Engineering confirms an in-progress migration off legacy batch pipelines with a stated near real-time goal by Q2.",
+        "fact_text": "VP Engineering states they are migrating off legacy batch pipelines onto Kafka and Snowflake, targeting near real-time ingestion by the second quarter.",
+        "inference_text": "Active migration with a concrete timeline signals a buying window for reliability and ingestion tooling.",
+        "recommended_action": "Open with a migration reliability checklist tailored to Kafka + Snowflake cutovers.",
+        "quote_text": "We're in the middle of migrating off our legacy batch pipelines onto Kafka and Snowflake.",
+        "quote_start_seconds": 60.0,
+        "quote_end_seconds": 78.5,
+        "speaker_label": "VP Engineering",
+        "confidence": 0.88
+      },
+      {
+        "signal_type": "competitor_mention",
+        "title": "Dissatisfied with current monitoring; budget approved to replace",
+        "summary": "Engineering evaluated reliability vendors, is unhappy with the current monitoring stack, and has budget approved to replace it within two quarters.",
+        "fact_text": "VP Engineering says they are not happy with their current monitoring stack and have budget approved to replace it in the next two quarters.",
+        "inference_text": "Approved replacement budget plus active dissatisfaction is a high-intent procurement signal.",
+        "recommended_action": "Lead with a head-to-head reliability comparison and a fast migration path from their incumbent.",
+        "quote_text": "We're not happy with our current monitoring stack and we have budget approved to replace it in the next two quarters.",
+        "quote_start_seconds": 610.0,
+        "quote_end_seconds": 631.0,
+        "speaker_label": "VP Engineering",
+        "confidence": 0.82
+      },
+      {
+        "signal_type": "hiring",
+        "title": "Four open data platform roles focused on streaming + reliability",
+        "summary": "Staff engineer confirms aggressive hiring for streaming and reliability on the data platform team.",
+        "fact_text": "A staff data engineer states there are four open data platform roles focused on streaming and reliability.",
+        "inference_text": "Headcount growth around reliability corroborates the migration and tooling investment.",
+        "recommended_action": "Reference their open reliability roles as proof of the initiative when reaching out.",
+        "quote_text": "We're hiring aggressively for the data platform team, four roles open right now focused on streaming and reliability.",
+        "quote_start_seconds": 905.0,
+        "quote_end_seconds": 922.0,
+        "speaker_label": "Staff Data Engineer",
+        "confidence": 0.7
+      }
+    ],
+    "earnings-q3": [
+      {
+        "signal_type": "product_launch",
+        "title": "Finance data product is the top company priority for two quarters",
+        "summary": "CEO names the finance data product launch as the top company priority, with platform investment increasing in 2025.",
+        "fact_text": "The CEO states the finance data product launch is the top company priority for the next two quarters, and the CFO confirms increased data platform investment in 2025.",
+        "inference_text": "Executive-level priority plus increased budget is a strong timing and fit signal.",
+        "recommended_action": "Tie outreach to operational readiness and compliance audit trails for the launch.",
+        "quote_text": "The launch of our finance data product is our top company priority for the next two quarters.",
+        "quote_start_seconds": 880.0,
+        "quote_end_seconds": 902.0,
+        "speaker_label": "CEO",
+        "confidence": 0.86
+      }
+    ],
+    "webinar-reliability": [
+      {
+        "signal_type": "competitor_mention",
+        "title": "Actively shopping for an observability vendor",
+        "summary": "Director of Data Reliability states they set data quality SLAs and are actively evaluating observability vendors because the current tool can't scale.",
+        "fact_text": "The Director of Data Reliability states they are actively shopping for an observability vendor because their current tool cannot keep up with streaming volume.",
+        "inference_text": "Active vendor evaluation with a stated technical gap is a direct buying trigger.",
+        "recommended_action": "Offer a streaming-scale observability proof-of-concept aligned to their SLAs.",
+        "quote_text": "We're actively shopping for an observability vendor. Our current tool can't keep up with streaming volume.",
+        "quote_start_seconds": 330.0,
+        "quote_end_seconds": 351.0,
+        "speaker_label": "Director of Data Reliability",
+        "confidence": 0.79
+      }
+    ]
+  }
+}
