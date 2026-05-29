@@ -104,6 +104,28 @@ POST /api/v1/notifications/{id}/read
 - **Phase 7 (scaffold) — Watchtower:** notifications center + hooks for
   scheduled refresh and proactive alerts.
 
+## Phase 7 delivered — Autonomous Watchtower
+
+The watchtower is now implemented as an opt-in, gated subsystem:
+
+- `AccountWatch` model: per-account subscription with `mode`,
+  `interval_seconds`, `next_due_at`, and failure tracking.
+- `services/watchtower.py`: pure, unit-tested scheduling — `find_due_watches`
+  (skips accounts with an in-flight scan, caps to `batch_size`),
+  `schedule_next`, and `tick(enqueue=…)` with an injected dispatcher so the
+  logic is testable without background threads.
+- `jobs/watchtower_runner.py`: a daemon loop + worker pool started from the app
+  lifespan, but only when `WATCHTOWER_ENABLED=true` (off by default).
+- API: `PUT/GET/DELETE /accounts/{id}/watch`, `GET /watchtower/watches`, and
+  `POST /watchtower/tick` (manual cycle for demos).
+- Frontend: a Watch/Watching toggle on the account Conversations section.
+
+Safety posture: the whole subsystem is off by default; scheduled scans default
+to mock; live is coerced to mock under the global mock gate; each tick
+dispatches at most `batch_size` scans and never stacks scans on an account that
+already has one running. Completion still flows through the existing
+notification center.
+
 ## Verification
 
 - Backend: `pytest` durable-runner mock e2e, CAS dedup, PII scrubber, resume.
