@@ -64,6 +64,22 @@ class Settings(BaseSettings):
     aiml_briefing_model: str = Field(default="")
     aiml_draft_model: str = Field(default="")
 
+    # Featherless AI (cheap open-model gateway, OpenAI-compatible).
+    # Used for source ranking and chunk relevance filtering in the media
+    # pipeline, where a low-cost model gates the expensive AIMLAPI extraction.
+    featherless_api_key: str = Field(default="")
+    featherless_api_base_url: str = Field(default="https://api.featherless.ai/v1")
+    featherless_ranking_model: str = Field(
+        default="mistralai/Mistral-7B-Instruct-v0.3"
+    )
+
+    # Media / multimodal signal engine
+    media_scan_max_sources: int = Field(default=3)
+    media_scan_phase_timeout_seconds: int = Field(default=600)
+    media_transcript_retention_raw: bool = Field(default=False)
+    speechmatics_poll_seconds: int = Field(default=10)
+    speechmatics_max_poll_attempts: int = Field(default=60)
+
     # Cognee
     cognee_api_key: str = Field(default="")
     cognee_api_url: str = Field(default="")
@@ -99,6 +115,9 @@ class Settings(BaseSettings):
             and self.aiml_briefing_model
             and self.aiml_draft_model
         )
+
+    def featherless_configured(self) -> bool:
+        return bool(self.featherless_api_key and self.featherless_api_base_url)
 
     def cognee_configured(self) -> bool:
         # Either hosted (api_key + url) or local self-hosted Cognee is acceptable.
