@@ -78,7 +78,7 @@ export function EvidenceDrawer({ subject, onOpenChange }: EvidenceDrawerProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-[560px] bg-surface/80 backdrop-blur-xl border-l border-border/30">
+      <SheetContent side="right" className="w-full sm:max-w-[560px] bg-surface border-l border-border">
         <SheetHeader>
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-col gap-1">

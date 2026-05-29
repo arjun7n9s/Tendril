@@ -37,10 +37,10 @@ export function IntegrationStatus() {
                 <TooltipTrigger asChild>
                   <span
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border px-2 py-0.5 text-[11px] font-medium tracking-[0.01em] transition-all duration-300 ease-out",
+                      "inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border px-2 py-0.5 text-[11px] font-medium tracking-[0.01em] transition-colors duration-150",
                       configured
-                        ? "border-signal/30 bg-signal-soft/70 text-signal shadow-flat shadow-glow-emerald/5 hover:border-signal/50"
-                        : "border-border/60 bg-raised/60 text-fg-muted",
+                        ? "border-signal/30 bg-signal-soft text-signal"
+                        : "border-border bg-raised text-fg-muted",
                     )}
                   >
                     {configured ? (

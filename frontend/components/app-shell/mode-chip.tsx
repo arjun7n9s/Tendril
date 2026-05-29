@@ -18,8 +18,8 @@ export function ModeChip() {
             className={cn(
               "inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border px-2 py-0.5 text-[11px] font-medium tracking-[0.04em] uppercase",
               mockMode
-                ? "border-[color:var(--color-border-default)] bg-[color:var(--color-raised)] text-[color:var(--color-fg-secondary)]"
-                : "border-[color:color-mix(in_oklab,var(--color-cobalt)_25%,transparent)] bg-[color:var(--color-cobalt-soft)] text-[color:var(--color-cobalt)]",
+                ? "border-border bg-raised text-fg-secondary"
+                : "border-cobalt/25 bg-cobalt-soft text-cobalt",
             )}
           >
             {mockMode ? (
