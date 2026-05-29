@@ -1,7 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Quote, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
+import { Copy, ExternalLink, Quote, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,8 @@ import type { ConversationSignalRead, PrivacyStatus } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 import { formatTimecode } from "@/lib/utils/timecode";
 
+import { QuoteWaveform } from "./quote-waveform";
+
 type ConversationEvidenceDrawerProps = {
   signal: ConversationSignalRead | null;
   onOpenChange: (open: boolean) => void;
@@ -35,12 +39,18 @@ const PRIVACY_META: Record<
   sensitive_blocked: { label: "Sensitive · blocked", icon: ShieldX, variant: "risk" },
 };
 
+function countRedactions(findings: Record<string, number> | null | undefined): number {
+  if (!findings) return 0;
+  return Object.values(findings).reduce((sum, n) => sum + (Number(n) || 0), 0);
+}
+
 export function ConversationEvidenceDrawer({
   signal,
   onOpenChange,
 }: ConversationEvidenceDrawerProps) {
   const open = signal !== null;
   const transcriptId = signal?.transcript_id ?? null;
+  const [copied, setCopied] = useState(false);
 
   const transcriptQuery = useQuery({
     queryKey: ["transcript", transcriptId],
@@ -59,6 +69,24 @@ export function ConversationEvidenceDrawer({
 
   const privacy = signal ? PRIVACY_META[signal.privacy_status] : null;
   const PrivacyIcon = privacy?.icon;
+  const redactionCount = countRedactions(
+    transcriptQuery.data?.pii_findings_json as Record<string, number> | null | undefined,
+  );
+
+  const copyCitation = async () => {
+    if (!signal) return;
+    const ts = signal.quote_start_seconds != null ? ` (${formatTimecode(signal.quote_start_seconds)})` : "";
+    const speaker = signal.speaker_label ? `${signal.speaker_label}, ` : "";
+    const citation = `"${signal.quote_text ?? signal.title}" — ${speaker}${host}${ts}\n${signal.source_url}`;
+    try {
+      await navigator.clipboard.writeText(citation);
+      setCopied(true);
+      toast.success("Quote + citation copied");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Could not copy");
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -101,6 +129,16 @@ export function ConversationEvidenceDrawer({
               </div>
             </header>
 
+            {/* Waveform locating the quote in the recording */}
+            <section className="rounded-[var(--radius-card)] border border-border/40 bg-canvas/60 p-3">
+              <QuoteWaveform
+                durationSeconds={signal.quote_end_seconds ? signal.quote_end_seconds * 1.4 : null}
+                quoteStart={signal.quote_start_seconds}
+                quoteEnd={signal.quote_end_seconds}
+                seed={signal.id}
+              />
+            </section>
+
             {/* The quote */}
             <section className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-evidence/30 bg-evidence-soft/40 p-3.5">
               <div className="flex items-center justify-between">
@@ -122,6 +160,17 @@ export function ConversationEvidenceDrawer({
               ) : (
                 <p className="text-[12px] text-fg-muted">No quote captured.</p>
               )}
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 gap-1 px-1.5 text-[11px]"
+                  onClick={copyCitation}
+                >
+                  <Copy className="size-3" aria-hidden />
+                  {copied ? "Copied" : "Copy quote + citation"}
+                </Button>
+              </div>
             </section>
 
             {signal.fact_text ? (
@@ -153,11 +202,20 @@ export function ConversationEvidenceDrawer({
 
             {/* Transcript excerpt */}
             <section className="flex flex-col gap-2.5">
-              <span className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-fg-secondary">
-                <span className="h-px flex-1 bg-border/40" />
-                Scrubbed transcript
-                <span className="h-px flex-1 bg-border/40" />
-              </span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex flex-1 items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-fg-secondary">
+                  <span className="h-px flex-1 bg-border/40" />
+                  Scrubbed transcript
+                  <span className="h-px flex-1 bg-border/40" />
+                </span>
+              </div>
+              {redactionCount > 0 ? (
+                <p className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-evidence/25 bg-evidence-soft/40 px-2 py-1 text-[11px] text-evidence">
+                  <ShieldAlert className="size-3" aria-hidden />
+                  {redactionCount} identifier{redactionCount === 1 ? "" : "s"} redacted before this
+                  was stored — outreach never sees raw personal data.
+                </p>
+              ) : null}
               <ScrollArea className="max-h-[300px] rounded-[var(--radius-card)] border border-border/40 bg-surface/60 p-4">
                 {transcriptQuery.isLoading ? (
                   <div className="flex flex-col gap-2">

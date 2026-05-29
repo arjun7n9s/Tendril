@@ -6,7 +6,7 @@ committed, and pushed before the next begins.
 
 Status legend: ⬜ not started · 🟡 in progress · ✅ done · ⏭️ deferred
 
-Last updated: initial draft.
+Last updated: Phases 1–6 complete; Phase 7 deferred.
 
 ---
 
@@ -111,18 +111,22 @@ opened to a table.
 **Verified:** 3 endpoint tests (empty, ranked after web scan, spoken evidence
 surfaced); tsc + eslint + production build clean (`/today` registered).
 
-### Phase 6 — Evidence drawer elevation 🟡
+### Phase 6 — Evidence drawer elevation ✅
 **Why:** `product-analysis §4.2.E`. Make "proof" the signature interaction.
 
-**Plan:**
-- Waveform/timeline strip with the quote region highlighted (conversation).
-- One-click "copy quote with citation".
-- Privacy status as a trust micro-explainer ("N identifiers redacted").
+**Done:**
+- `QuoteWaveform`: a deterministic, non-interactive waveform that highlights
+  where the quote sits in the recording ("we listened to this").
+- One-click "Copy quote + citation" producing
+  `"…quote…" — Speaker, host (mm:ss)` + URL.
+- Privacy micro-explainer: "N identifiers redacted before this was stored —
+  outreach never sees raw personal data" (turns a compliance detail into trust).
 
-**Verify:** tsc + build.
+**Verified:** tsc + eslint + production build clean.
 
-### Phase 7 — Shared motion + elevation vocabulary ⏭️ (stretch)
-Define named transitions + a strict elevation scale; apply app-wide.
+### Phase 7 — Shared motion + elevation vocabulary ⏭️ (stretch, deferred)
+Define named transitions + a strict elevation scale; apply app-wide. Deferred —
+the highest-leverage concept and UX items (Phases 1–6) are complete.
 
 ---
 
@@ -141,3 +145,16 @@ Define named transitions + a strict elevation scale; apply app-wide.
   total, shows "+N from spoken evidence". tsc + build clean.
 - Phase 5 done: `/api/v1/today` ranked feed + opinionated `/today` home (now the
   default landing). 3 endpoint tests green; frontend tsc/eslint/build clean.
+- Phase 6 done: evidence drawer elevation — quote waveform, copy-with-citation,
+  privacy micro-explainer. tsc/eslint/build clean.
+- All concept-integrity (1–3) and premium-UX (4–6) phases complete. Phase 7
+  (shared motion/elevation vocabulary) deferred as a polish stretch.
+
+## Summary
+
+Concept gaps closed: true content-addressable dedup, hard per-scan budget +
+cost telemetry, and a unified score that conversation evidence genuinely moves.
+Premium UX landed: the score visibly moves on a scan, an opinionated "Today"
+home matches the daily-queue promise, and the evidence drawer is now the
+signature proof moment. Backend 134+ tests green throughout; frontend builds
+clean. Every phase committed and pushed.
