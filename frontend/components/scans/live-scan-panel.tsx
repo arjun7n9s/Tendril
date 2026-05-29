@@ -20,6 +20,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { COPY } from "@/lib/copy";
+import { SPRING } from "@/lib/motion";
 import {
   useScanEvents,
   useScanEvidence,
@@ -227,12 +228,7 @@ function ResultBanner({
     <motion.div
       initial={reduce ? false : { opacity: 0, y: 8, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        type: "spring",
-        stiffness: 280,
-        damping: 24,
-        mass: 0.5,
-      }}
+      transition={SPRING}
       className={`flex items-center gap-3 rounded-[var(--radius-card)] border p-4 backdrop-blur-sm ${palette}`}
     >
       {children}

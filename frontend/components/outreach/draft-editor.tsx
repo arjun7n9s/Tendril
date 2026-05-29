@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useApproveDraft, useEditDraft, useRejectDraft } from "@/lib/hooks/use-outreach";
+import { EMPHASIS } from "@/lib/motion";
 import type { OutreachRead, OutreachTone } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -64,7 +65,7 @@ export function DraftEditor({ draft }: DraftEditorProps) {
                 ? undefined
                 : { scale: [1, 1.08, 1] }
             }
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            transition={EMPHASIS}
             className="inline-flex"
           >
             <StatusChip kind="outreach" value={draft.status} />

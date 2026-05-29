@@ -2,6 +2,8 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 
+import { DUR, EASE_OUT } from "@/lib/motion";
+
 type ScoreBarProps = {
   label: string;
   value: number;
@@ -36,7 +38,7 @@ export function ScoreBar({ label, value, max, variant = "signal" }: ScoreBarProp
         <motion.div
           initial={reduce ? false : { width: 0 }}
           animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: DUR.bar, ease: EASE_OUT }}
           className="h-full rounded-full"
           style={{ backgroundImage: GRADIENT_MAP[variant] }}
         />

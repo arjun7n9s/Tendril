@@ -193,6 +193,37 @@
   border-color: var(--color-border-default);
 }
 
+/* ----------------------------------------------------------------------
+   Elevation scale
+   A strict, named hierarchy so surfaces read as one coherent system
+   instead of ad-hoc shadow/blur combinations:
+     canvas  → the page background (no elevation)
+     e1      → resting cards / rows (flat shadow, hairline border)
+     e2      → hover / active cards (raised shadow, stronger border)
+     e3      → overlays, drawers, popovers (overlay shadow)
+   Use these instead of hand-mixing shadow + backdrop-blur per component.
+   ---------------------------------------------------------------------- */
+@utility elevation-1 {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-flat);
+}
+
+@utility elevation-2 {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-raised);
+}
+
+@utility elevation-3 {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-overlay);
+}
+
 @utility text-balance {
   text-wrap: balance;
 }

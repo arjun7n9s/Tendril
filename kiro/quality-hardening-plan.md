@@ -6,7 +6,7 @@ committed, and pushed before the next begins.
 
 Status legend: ⬜ not started · 🟡 in progress · ✅ done · ⏭️ deferred
 
-Last updated: Phases 1–6 complete; Phase 7 deferred.
+Last updated: Phases 1–7 complete.
 
 ---
 
@@ -124,9 +124,19 @@ surfaced); tsc + eslint + production build clean (`/today` registered).
 
 **Verified:** tsc + eslint + production build clean.
 
-### Phase 7 — Shared motion + elevation vocabulary ⏭️ (stretch, deferred)
-Define named transitions + a strict elevation scale; apply app-wide. Deferred —
-the highest-leverage concept and UX items (Phases 1–6) are complete.
+### Phase 7 — Shared motion + elevation vocabulary ✅
+**Why:** `product-analysis §4.2.G/§4.2.J`. Consistent motion + a strict
+elevation hierarchy is the most common "almost premium" tell.
+
+**Done:**
+- `lib/motion.ts`: named tokens — `EASE_OUT`, `DUR` scale, `ENTER`/`SPRING`/
+  `EMPHASIS` transition presets, `fadeRise`/`popIn` variants, `pulseScale`.
+  Refactored `MotionFade`, `ScoreBar`, `ScoreRing`, `LiveScanPanel`, and
+  `DraftEditor` to use them so timing/easing are identical app-wide.
+- `globals.css`: a documented `elevation-1/2/3` utility scale (resting → hover →
+  overlay) so surfaces stop hand-mixing shadow + backdrop-blur.
+
+**Verified:** tsc + eslint + production build clean.
 
 ---
 
@@ -147,8 +157,10 @@ the highest-leverage concept and UX items (Phases 1–6) are complete.
   default landing). 3 endpoint tests green; frontend tsc/eslint/build clean.
 - Phase 6 done: evidence drawer elevation — quote waveform, copy-with-citation,
   privacy micro-explainer. tsc/eslint/build clean.
-- All concept-integrity (1–3) and premium-UX (4–6) phases complete. Phase 7
-  (shared motion/elevation vocabulary) deferred as a polish stretch.
+- Phase 7 done: shared motion vocabulary (`lib/motion.ts`) applied across
+  primitives/panels + documented `elevation-1/2/3` utilities. tsc/eslint/build
+  clean.
+- All seven phases complete.
 
 ## Summary
 

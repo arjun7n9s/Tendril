@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils/cn";
+import { EASE_OUT } from "@/lib/motion";
 import { scoreTier, scoreTierAccent, type ScoreTier } from "@/lib/utils/score";
 import type { ScoreRead } from "@/lib/types";
 
@@ -50,7 +51,7 @@ export function ScoreRing({
           ? undefined
           : { scale: [1, 1.06, 1] }
       }
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.6, ease: EASE_OUT }}
       className={cn("relative inline-flex items-center justify-center", className)}
       style={{ width: size, height: size }}
     >

@@ -3,6 +3,8 @@
 import { motion, useReducedMotion } from "framer-motion";
 import * as React from "react";
 
+import { DUR, EASE_OUT } from "@/lib/motion";
+
 type MotionFadeProps = {
   delay?: number;
   duration?: number;
@@ -23,7 +25,7 @@ type MotionFadeProps = {
  */
 export function MotionFade({
   delay = 0,
-  duration = 0.22,
+  duration = DUR.base,
   className,
   children,
   as = "div",
@@ -39,7 +41,7 @@ export function MotionFade({
     <Tag
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ delay, duration, ease: EASE_OUT }}
       className={className}
     >
       {children}
