@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     cors_allow_origin_regex: str = Field(default="")
 
     # Memory backend selector. "jsonl" is safest for demos; "cognee" uses
-    # local Cognee storage behind the existing MemoryService protocol.
+    # hosted Cognee behind the existing MemoryService protocol.
     tendril_memory_backend: str = Field(default="jsonl")
 
     # Scan watchdog
@@ -80,9 +80,20 @@ class Settings(BaseSettings):
     speechmatics_poll_seconds: int = Field(default=10)
     speechmatics_max_poll_attempts: int = Field(default=60)
 
+    # Autonomous watchtower (Phase 7). OFF by default so scheduled scans
+    # never burn provider credits without an explicit opt-in.
+    watchtower_enabled: bool = Field(default=False)
+    watchtower_tick_seconds: int = Field(default=60)
+    watchtower_default_interval_seconds: int = Field(default=86400)
+    watchtower_batch_size: int = Field(default=2)
+    # Mode used for scheduled scans: "mock" (safe default) or "live".
+    watchtower_default_mode: str = Field(default="mock")
+
     # Cognee
     cognee_api_key: str = Field(default="")
     cognee_api_url: str = Field(default="")
+    cognee_tenant_id: str = Field(default="")
+    cognee_user_id: str = Field(default="")
     cognee_dataset_prefix: str = Field(default="signalgraph")
     cognee_operation_timeout_seconds: int = Field(default=20)
 
@@ -120,10 +131,7 @@ class Settings(BaseSettings):
         return bool(self.featherless_api_key and self.featherless_api_base_url)
 
     def cognee_configured(self) -> bool:
-        # Either hosted (api_key + url) or local self-hosted Cognee is acceptable.
-        return (self.tendril_memory_backend or "").lower() == "cognee" or bool(
-            self.cognee_api_key and self.cognee_api_url
-        )
+        return bool(self.cognee_api_key and self.cognee_api_url and self.cognee_tenant_id)
 
     def triggerware_configured(self) -> bool:
         return bool(self.triggerware_api_key)

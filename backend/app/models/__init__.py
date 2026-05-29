@@ -9,6 +9,7 @@ from app.models.brief import Brief
 from app.models.conversation_signal import ConversationSignal
 from app.models.evidence import EvidenceDocument
 from app.models.icp import ICPProfile
+from app.models.account_watch import AccountWatch
 from app.models.media_asset import MediaAsset
 from app.models.media_scan_event import MediaScanEvent
 from app.models.media_scan_job import MediaScanJob
@@ -29,6 +30,7 @@ __all__ = [
     "ConversationSignal",
     "EvidenceDocument",
     "ICPProfile",
+    "AccountWatch",
     "MediaAsset",
     "MediaScanEvent",
     "MediaScanJob",

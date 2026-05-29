@@ -18,9 +18,11 @@ from app.api import (
     outreach,
     scans,
     signals,
+    watchtower,
 )
 from app.config import get_settings
 from app.db import init_db
+from app.jobs.watchtower_runner import start_watchtower, stop_watchtower
 from app.logging_setup import configure_logging, get_logger
 
 
@@ -39,9 +41,12 @@ async def lifespan(app: FastAPI):
         featherless=settings.featherless_configured(),
         speechmatics=settings.speechmatics_configured(),
         cognee=settings.cognee_configured(),
+        watchtower=settings.watchtower_enabled,
         version=__version__,
     )
+    start_watchtower()
     yield
+    stop_watchtower()
     log.info("app.shutdown")
 
 
@@ -78,6 +83,7 @@ def create_app() -> FastAPI:
     # Multimodal signal engine
     app.include_router(media_scans.router)
     app.include_router(notifications.router)
+    app.include_router(watchtower.router)
 
     return app
 
