@@ -122,6 +122,16 @@ def get_account(account_id: str, db: Session = Depends(get_db)) -> dict[str, Any
         select(Scan).where(Scan.account_id == account_id).order_by(Scan.created_at.desc())
     )
 
+    # Unified, modality-aware headline score (web + media). Falls back to the
+    # web score below when no snapshot exists yet.
+    from app.models.account_score_snapshot import AccountScoreSnapshot
+
+    latest_snapshot = db.scalar(
+        select(AccountScoreSnapshot)
+        .where(AccountScoreSnapshot.account_id == account_id)
+        .order_by(AccountScoreSnapshot.created_at.desc())
+    )
+
     # Phase 7: scope score / brief / signals to the latest scan when one
     # exists, so repeated runs in a single demo DB don't pollute the
     # account view with stale rows. Fall back to the account-level
@@ -178,6 +188,26 @@ def get_account(account_id: str, db: Session = Depends(get_db)) -> dict[str, Any
         "latest_score": (
             ScoreRead.model_validate(latest_score).model_dump(mode="json")
             if latest_score
+            else None
+        ),
+        "latest_score_snapshot": (
+            {
+                "id": latest_snapshot.id,
+                "account_id": latest_snapshot.account_id,
+                "fit_score": latest_snapshot.fit_score,
+                "timing_score": latest_snapshot.timing_score,
+                "relationship_score": latest_snapshot.relationship_score,
+                "evidence_score": latest_snapshot.evidence_score,
+                "total_score": latest_snapshot.total_score,
+                "sales_ready": latest_snapshot.sales_ready,
+                "source": latest_snapshot.source,
+                "conversation_delta": latest_snapshot.conversation_delta,
+                "reasoning_json": latest_snapshot.reasoning_json,
+                "created_at": latest_snapshot.created_at.isoformat()
+                if latest_snapshot.created_at
+                else None,
+            }
+            if latest_snapshot
             else None
         ),
         "latest_brief": (

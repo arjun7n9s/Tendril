@@ -3,7 +3,7 @@
 import type { Timestamped } from "./common";
 import type { ScanRead } from "./scan";
 import type { SignalRead } from "./signal";
-import type { BriefRead, ScoreRead } from "./brief";
+import type { AccountScoreSnapshot, BriefRead, ScoreRead } from "./brief";
 
 export const ACCOUNT_STATUSES = [
   "target",
@@ -37,6 +37,7 @@ export type AccountDetailResponse = {
   account: AccountRead;
   latest_scan: ScanRead | null;
   latest_score: ScoreRead | null;
+  latest_score_snapshot: AccountScoreSnapshot | null;
   latest_brief: BriefRead | null;
   recent_signals: SignalRead[];
 };

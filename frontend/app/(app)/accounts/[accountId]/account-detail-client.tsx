@@ -104,7 +104,7 @@ export function AccountDetailClient({ accountId }: Props) {
     );
   }
 
-  const { account, latest_scan, latest_score, latest_brief, recent_signals } = detail.data;
+  const { account, latest_scan, latest_score, latest_score_snapshot, latest_brief, recent_signals } = detail.data;
   const scanRunning =
     startScan.isPending ||
     (latest_scan ? NON_TERMINAL_SCAN_STATUSES.has(latest_scan.status) : false);
@@ -129,7 +129,7 @@ export function AccountDetailClient({ accountId }: Props) {
         />
 
         <div className="flex flex-col gap-5 px-6 pb-8">
-          <AccountScoreStrip score={latest_score} brief={latest_brief} />
+          <AccountScoreStrip score={latest_score} snapshot={latest_score_snapshot} brief={latest_brief} />
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
             <section className="flex flex-col gap-3">

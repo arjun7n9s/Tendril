@@ -5,6 +5,7 @@ so a single `Base.metadata.create_all(...)` will create every table.
 """
 
 from app.models.account import Account
+from app.models.account_score_snapshot import AccountScoreSnapshot
 from app.models.brief import Brief
 from app.models.conversation_signal import ConversationSignal
 from app.models.evidence import EvidenceDocument
@@ -26,6 +27,7 @@ from app.models.transcript import Transcript
 
 __all__ = [
     "Account",
+    "AccountScoreSnapshot",
     "Brief",
     "ConversationSignal",
     "EvidenceDocument",

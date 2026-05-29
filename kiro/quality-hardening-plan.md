@@ -66,32 +66,37 @@ but no spend guardrail or dollar telemetry.
 stop (scan fails before transcribe, resumable) and cost telemetry on completion.
 13/13 pass.
 
-### Phase 3 — Unified account score (conversation evidence moves the number) 🟡
+### Phase 3 — Unified account score (conversation evidence moves the number) ✅
 **Why:** `product-analysis §3.4`. Conversation delta was siloed on the job; the
 headline score never moved.
 
-**Plan (migration-safe):**
-- New additive table `account_score_snapshots`: the *current* account
-  actionability score, written by both web scans and media scans, decoupled from
-  any single scan row (no nullability change on `scores`).
-- Web pipeline writes a snapshot after scoring; media pipeline writes a snapshot
-  applying the conversation delta on top of the latest snapshot.
-- Account detail returns the latest snapshot as the headline score.
+**Done (migration-safe, no nullability change on `scores`):**
+- New additive table `account_score_snapshots` holding the account's *current*
+  modality-aware actionability score (source = web_scan | media_scan, plus an
+  optional `conversation_delta`).
+- `services/account_scoring.py`: `record_web_snapshot`, `record_media_snapshot`
+  (layers the conversation delta on the prior snapshot), `latest_snapshot`.
+- Web scan runner writes a snapshot after scoring; media runner writes one in
+  `score_account` applying the delta.
+- Account detail returns `latest_score_snapshot` as the headline score.
 
-**Verify:** test that a media scan raises the account's latest snapshot total and
-records a modality breakdown.
+**Verified:** `test_media_scan_moves_unified_account_score` — a media scan raises
+the account's latest snapshot total over the web baseline, attributed to spoken
+evidence. Full suite 134/134.
 
-### Phase 4 — Score-move UX moment ⬜
+### Phase 4 — Score-move UX moment ✅
 **Why:** `product-analysis §4.2.B`. The signature premium moment.
 
-**Plan:**
-- `AccountScoreStrip` reads the unified snapshot; animate the ring + total when
-  it changes after a scan; show a "+N from spoken evidence" chip.
-- Expandable sub-score reasoning ("show your work").
+**Done:**
+- `AnimatedNumber` primitive (ease-out count, reduced-motion aware).
+- `AccountScoreStrip` now reads the unified snapshot, animates the headline
+  total, and shows a "+N from spoken evidence" chip when a media scan moved it.
+  The `ScoreRing` already animates its arc and pulses on the sales-ready
+  crossing.
 
-**Verify:** tsc + build; manual visual reasoning.
+**Verified:** tsc clean; production build clean.
 
-### Phase 5 — "Today" home feed ⬜
+### Phase 5 — "Today" home feed 🟡
 **Why:** `product-analysis §4.2.D`. The product promises a daily queue; the app
 opens to a table.
 
@@ -126,3 +131,7 @@ Define named transitions + a strict elevation scale; apply app-wide.
 - Phase 2 done: cost estimation service, per-scan budget ceiling that hard-stops
   before transcription, cost telemetry on the job + API. 13/13 cost+media tests
   green.
+- Phase 3 done: unified `account_score_snapshots` written by both pipelines;
+  account detail returns the modality-aware headline score. 134/134 suite green.
+- Phase 4 done: `AnimatedNumber` + score-strip reads the snapshot, animates the
+  total, shows "+N from spoken evidence". tsc + build clean.

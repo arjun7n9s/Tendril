@@ -334,3 +334,40 @@ def test_cost_telemetry_accrues_on_completed_scan(
     status = client.get(f"/api/v1/media-scans/{scan_id}").json()
     assert status["status"] == "completed"
     assert status["cost_estimate_usd"] >= 0.0
+
+
+def test_media_scan_moves_unified_account_score(
+    client: TestClient, seeded_account: str
+) -> None:
+    """A media scan writes a unified snapshot that raises the account's
+    headline total over the prior web-scan snapshot, attributed to spoken
+    evidence."""
+    from app.jobs.scan_runner import run_scan
+
+    # First, a web scan establishes a baseline snapshot.
+    web = client.post(
+        f"/api/v1/accounts/{seeded_account}/scans", json={"mode": "mock"}
+    ).json()
+    run_scan(web["scan_id"])
+
+    detail_before = client.get(f"/api/v1/accounts/{seeded_account}").json()
+    snap_before = detail_before["latest_score_snapshot"]
+    assert snap_before is not None
+    assert snap_before["source"] == "web_scan"
+    baseline_total = snap_before["total_score"]
+
+    # Then a media scan should layer conversation evidence on top.
+    media = client.post(
+        f"/api/v1/accounts/{seeded_account}/media-scans", json={"mode": "mock"}
+    ).json()
+    run_media_scan(media["media_scan_id"])
+
+    detail_after = client.get(f"/api/v1/accounts/{seeded_account}").json()
+    snap_after = detail_after["latest_score_snapshot"]
+    assert snap_after["source"] == "media_scan"
+    assert snap_after["conversation_delta"] is not None
+    # The fixture conversation has hot signals, so the total should rise.
+    assert snap_after["total_score"] >= baseline_total
+    assert snap_after["total_score"] == min(
+        100, baseline_total + snap_after["conversation_delta"]
+    )

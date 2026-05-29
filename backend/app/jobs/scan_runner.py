@@ -301,6 +301,23 @@ def _execute(db: Session, scan: Scan) -> None:
     )
     db.add(score_row)
     db.commit()
+    # Unified snapshot so the account's headline score reflects this run and
+    # later media scans can layer conversation evidence on top of it.
+    from app.services.account_scoring import record_web_snapshot
+
+    record_web_snapshot(
+        db,
+        account_id=account.id,
+        fit=scoring.fit_score,
+        timing=scoring.timing_score,
+        relationship=scoring.relationship_score,
+        evidence=scoring.evidence_score,
+        total=scoring.total_score,
+        sales_ready=scoring.sales_ready,
+        origin_id=scan.id,
+        reasoning=scoring.reasoning,
+    )
+    db.commit()
     events.phase_completed(
         ScanStatus.scoring,
         total=scoring.total_score,

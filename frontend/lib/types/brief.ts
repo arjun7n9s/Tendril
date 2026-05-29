@@ -15,6 +15,26 @@ export type ScoreRead = Timestamped & {
   score_reasoning_json?: Record<string, unknown> | null;
 };
 
+/**
+ * Unified, modality-aware account score (web + media).
+ * Source of the headline number; `conversation_delta` is the spoken-evidence
+ * contribution when `source === "media_scan"`.
+ */
+export type AccountScoreSnapshot = {
+  id: string;
+  account_id: string;
+  fit_score: number;
+  timing_score: number;
+  relationship_score: number;
+  evidence_score: number;
+  total_score: number;
+  sales_ready: boolean;
+  source: "web_scan" | "media_scan";
+  conversation_delta?: number | null;
+  reasoning_json?: Record<string, unknown> | null;
+  created_at?: string | null;
+};
+
 export type BriefEvidenceItem = {
   text: string;
   url?: string;

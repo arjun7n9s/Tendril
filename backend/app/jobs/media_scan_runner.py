@@ -409,6 +409,19 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
         delta = compute_score_delta(db, account=account, signals=all_signals)
         job.score_delta = delta.delta
         db.add(job)
+        # Unified snapshot: layer the conversation delta onto the account's
+        # latest score so the headline number actually moves.
+        from app.services.account_scoring import record_media_snapshot
+
+        record_media_snapshot(
+            db,
+            account_id=account.id,
+            delta=delta.delta,
+            new_total=delta.new_total,
+            sales_ready=delta.sales_ready,
+            origin_id=job.id,
+            explanation=delta.explanation,
+        )
         db.commit()
         events.stage_completed(
             MediaScanStage.score_account,

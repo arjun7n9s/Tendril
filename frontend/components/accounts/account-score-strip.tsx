@@ -1,28 +1,35 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { Mic, Sparkles } from "lucide-react";
 
+import { AnimatedNumber } from "@/components/primitives/animated-number";
 import { ScoreBar } from "@/components/primitives/score-bar";
 import { ScoreRing } from "@/components/primitives/score-ring";
 import { Badge } from "@/components/ui/badge";
 import { COPY } from "@/lib/copy";
-import type { BriefRead, ScoreRead } from "@/lib/types";
+import type { AccountScoreSnapshot, BriefRead, ScoreRead } from "@/lib/types";
 import { scoreTier, scoreTierAccent, scoreTierLabel } from "@/lib/utils/score";
 import { cn } from "@/lib/utils/cn";
 
 type AccountScoreStripProps = {
   score: ScoreRead | null;
+  snapshot?: AccountScoreSnapshot | null;
   brief: BriefRead | null;
 };
 
-export function AccountScoreStrip({ score, brief }: AccountScoreStripProps) {
-  const tier = scoreTier(score);
+export function AccountScoreStrip({ score, snapshot, brief }: AccountScoreStripProps) {
+  // Prefer the unified, modality-aware snapshot (moves when spoken evidence
+  // lands); fall back to the web score when no snapshot exists yet.
+  const effective = snapshot ?? score;
+  const tier = scoreTier(effective);
   const accent = scoreTierAccent(tier);
+  const conversationDelta = snapshot?.conversation_delta ?? 0;
+  const fromSpokenEvidence = snapshot?.source === "media_scan" && conversationDelta > 0;
 
   return (
-    <div className="grid grid-cols-1 gap-4 rounded-[var(--radius-card)] border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-flat)] md:grid-cols-[180px_1fr_1fr]">
+    <div className="grid grid-cols-1 gap-4 rounded-[var(--radius-card)] border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-flat)] md:grid-cols-[200px_1fr_1fr]">
       <div className="flex items-center gap-3">
-        <ScoreRing score={score} size={72} strokeWidth={7} />
+        <ScoreRing score={effective} size={72} strokeWidth={7} />
         <div className="flex flex-col gap-1">
           <Badge
             variant={
@@ -44,36 +51,41 @@ export function AccountScoreStrip({ score, brief }: AccountScoreStripProps) {
                 ? COPY.badges.nearMiss
                 : scoreTierLabel(tier)}
           </Badge>
-          <span className={cn("text-[12px]", accent.fg)}>
-            {score
-              ? `Total ${score.total_score}/100`
-              : "No score yet — run a scan to surface evidence."}
+          <span className={cn("text-[12px] inline-flex items-center gap-1", accent.fg)}>
+            {effective ? (
+              <>
+                Total{" "}
+                <AnimatedNumber
+                  value={effective.total_score}
+                  className="font-semibold tabular-nums"
+                />
+                /100
+              </>
+            ) : (
+              "No score yet — run a scan to surface evidence."
+            )}
           </span>
+          {fromSpokenEvidence ? (
+            <span className="inline-flex w-fit items-center gap-1 rounded-[var(--radius-chip)] border border-graph/30 bg-graph-soft/60 px-1.5 py-0.5 text-[10.5px] font-semibold text-graph">
+              <Mic className="size-3" aria-hidden />
+              +{conversationDelta} from spoken evidence
+            </span>
+          ) : null}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <ScoreBar
-          label="Fit"
-          value={score?.fit_score ?? 0}
-          max={30}
-          variant="signal"
-        />
-        <ScoreBar
-          label="Timing"
-          value={score?.timing_score ?? 0}
-          max={30}
-          variant="cobalt"
-        />
+        <ScoreBar label="Fit" value={effective?.fit_score ?? 0} max={30} variant="signal" />
+        <ScoreBar label="Timing" value={effective?.timing_score ?? 0} max={30} variant="cobalt" />
         <ScoreBar
           label="Relationship"
-          value={score?.relationship_score ?? 0}
+          value={effective?.relationship_score ?? 0}
           max={20}
           variant="graph"
         />
         <ScoreBar
           label="Evidence"
-          value={score?.evidence_score ?? 0}
+          value={effective?.evidence_score ?? 0}
           max={20}
           variant="evidence"
         />
