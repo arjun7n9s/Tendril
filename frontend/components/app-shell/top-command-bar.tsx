@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { IntegrationStatus } from "./integration-status";
 import { ModeChip } from "./mode-chip";
+import { NotificationBell } from "./notification-bell";
 
 import { MonogramTile } from "@/components/primitives/monogram-tile";
 import { StatusChip } from "@/components/primitives/status-chip";
@@ -115,6 +116,7 @@ export function TopCommandBar({ title, subtitle, primaryAction, meta }: TopComma
             </kbd>
           </button>
           <ModeChip />
+          <NotificationBell />
           <div className="hidden lg:flex">
             <IntegrationStatus />
           </div>

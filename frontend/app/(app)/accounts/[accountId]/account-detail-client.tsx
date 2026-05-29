@@ -13,6 +13,7 @@ import {
   EmptySignalsIllustration,
   ErrorStateIllustration,
 } from "@/components/illustrations";
+import { AccountConversations } from "@/components/media/account-conversations";
 import { AccountOutreachPreview } from "@/components/outreach/account-outreach-preview";
 import { EmptyState } from "@/components/primitives/empty-state";
 import { SectionHeading } from "@/components/primitives/section-heading";
@@ -211,6 +212,8 @@ export function AccountDetailClient({ accountId }: Props) {
               <AccountOutreachPreview accountId={accountId} />
             </aside>
           </div>
+
+          <AccountConversations accountId={accountId} />
         </div>
       </div>
 
