@@ -79,6 +79,15 @@ class Settings(BaseSettings):
     media_transcript_retention_raw: bool = Field(default=False)
     speechmatics_poll_seconds: int = Field(default=10)
     speechmatics_max_poll_attempts: int = Field(default=60)
+    # Per-scan budget ceiling (USD, estimated). 0 disables the hard stop.
+    # The feature's whole premise is cost discipline, so a scan that would
+    # exceed this is stopped before the expensive transcribe/extract stages.
+    # Default is generous enough for a normal multi-source scan but still
+    # catches a runaway (e.g. many long sources with no cache hits).
+    media_scan_budget_usd: float = Field(default=25.0)
+    # Rough provider price estimates used only for budgeting/telemetry.
+    cost_asr_per_minute_usd: float = Field(default=0.02)
+    cost_llm_per_call_usd: float = Field(default=0.01)
 
     # Autonomous watchtower (Phase 7). OFF by default so scheduled scans
     # never burn provider credits without an explicit opt-in.

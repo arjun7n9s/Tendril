@@ -165,6 +165,7 @@ def _job_to_read(db: Session, job: MediaScanJob) -> MediaScanRead:
         attempt_count=job.attempt_count,
         last_error=job.last_error,
         score_delta=job.score_delta,
+        cost_estimate_usd=job.cost_estimate_usd or 0.0,
         stage_state_json=job.stage_state_json,
         started_at=job.started_at,
         completed_at=job.completed_at,

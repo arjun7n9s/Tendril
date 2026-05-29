@@ -51,6 +51,7 @@ class MediaScanRead(TimestampedModel):
     attempt_count: int
     last_error: str | None = None
     score_delta: int | None = None
+    cost_estimate_usd: float = 0.0
     stage_state_json: dict[str, Any] | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None

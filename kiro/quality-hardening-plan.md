@@ -48,23 +48,25 @@ two URLs got transcribed twice — defeating the feature's core cost premise.
 different URLs resolve to one asset and the second is a cache hit; all 7 media
 tests pass.
 
-### Phase 2 — Budget ceiling + cost telemetry ⬜
+### Phase 2 — Budget ceiling + cost telemetry ✅
 **Why:** `product-analysis §3.3`. The feature is *about* cost; we had soft caps
 but no spend guardrail or dollar telemetry.
 
-**Plan:**
-- `services/cost.py`: rough, clearly-labeled per-unit estimates (ASR per minute,
-  LLM per call) → `estimate_*` helpers.
-- `MediaScanJob.cost_estimate_usd` column (additive; `ensure_schema` ADD COLUMN).
-- Runner accumulates estimated cost per stage; a per-scan budget
-  (`MEDIA_SCAN_BUDGET_USD`) hard-stops before transcribe/extract when exceeded,
-  marking the job `failed` with a clear, resumable reason.
-- Surface `cost_estimate_usd` in `MediaScanRead` + the scan panel.
+**Done:**
+- `services/cost.py`: labeled per-unit estimates (`estimate_transcription_usd`,
+  `estimate_llm_calls_usd`, `would_exceed_budget`) driven by settings.
+- `MediaScanJob.cost_estimate_usd` column (additive via `ensure_schema`).
+- Runner accrues estimated cost per stage and, before transcription, projects
+  ASR + extraction cost for not-yet-cached sources; if it would exceed
+  `MEDIA_SCAN_BUDGET_USD` (default $25, 0 = off) it hard-stops with a clear,
+  resumable reason. Cache hits accrue nothing.
+- `cost_estimate_usd` surfaced in `MediaScanRead`.
 
-**Verify:** unit test for cost estimation; runner test asserting a tiny budget
-stops the scan before transcription.
+**Verified:** `test_cost.py` (estimation + ceiling) and runner tests for budget
+stop (scan fails before transcribe, resumable) and cost telemetry on completion.
+13/13 pass.
 
-### Phase 3 — Unified account score (conversation evidence moves the number) ⬜
+### Phase 3 — Unified account score (conversation evidence moves the number) 🟡
 **Why:** `product-analysis §3.4`. Conversation delta was siloed on the job; the
 headline score never moved.
 
@@ -120,4 +122,7 @@ Define named transitions + a strict elevation scale; apply app-wide.
 - (init) Plan created.
 - Phase 1 done: true content-addressable dedup (transcript-content hashing),
   duplicate-episode fixture, `ensure_schema` migration helper. 7/7 media tests
+  green.
+- Phase 2 done: cost estimation service, per-scan budget ceiling that hard-stops
+  before transcription, cost telemetry on the job + API. 13/13 cost+media tests
   green.

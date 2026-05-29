@@ -39,6 +39,11 @@ from app.models.media_scan_job import MediaScanJob
 from app.models.media_source import MediaSource
 from app.models.transcript import Transcript
 from app.services.conversation_extractor import extract_conversation_signals
+from app.services.cost import (
+    estimate_llm_calls_usd,
+    estimate_transcription_usd,
+    would_exceed_budget,
+)
 from app.services.media_discovery import discover_sources_live, discover_sources_mock
 from app.services.media_memory import write_conversation_memory
 from app.services.media_ranking import rank_sources
@@ -140,6 +145,15 @@ def _is_done(job: MediaScanJob, stage: MediaScanStage) -> bool:
     return bool(_state(job).get(stage.value, {}).get("done"))
 
 
+class _BudgetExceeded(RuntimeError):
+    """Raised when a scan's projected cost would exceed the per-scan ceiling."""
+
+
+def _accrue_cost(db: Session, job: MediaScanJob, amount_usd: float) -> None:
+    job.cost_estimate_usd = round((job.cost_estimate_usd or 0.0) + amount_usd, 4)
+    db.add(job)
+
+
 def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> None:
     settings = get_settings()
     account = db.get(Account, job.account_id)
@@ -193,6 +207,8 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
         )
         db.commit()
         events.stage_completed(MediaScanStage.rank_sources, selected=len(selected))
+        _accrue_cost(db, job, estimate_llm_calls_usd(1, settings=settings))
+        db.commit()
         _record_stage(
             db,
             job,
@@ -228,6 +244,39 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
     # ---------- Stage: transcribe ----------
     if not _is_done(job, MediaScanStage.transcribe):
         events.stage_started(MediaScanStage.transcribe)
+
+        # Budget gate: project ASR cost for sources that still need
+        # transcription (cache hits cost nothing) plus one extraction call per
+        # source, and hard-stop before spending if it would exceed the ceiling.
+        projected = job.cost_estimate_usd or 0.0
+        to_transcribe: list[MediaSource] = []
+        for src in selected_sources:
+            if src.media_asset_id is None:
+                continue
+            asset = db.get(MediaAsset, src.media_asset_id)
+            if asset is None:
+                continue
+            needs_asr = asset.transcript_id is None
+            if needs_asr:
+                to_transcribe.append(src)
+                projected += estimate_transcription_usd(
+                    src.duration_seconds, settings=settings
+                )
+            projected += estimate_llm_calls_usd(1, settings=settings)
+
+        if would_exceed_budget(projected, settings=settings):
+            events.error(
+                "projected cost exceeds per-scan budget; stopping before "
+                "transcription (resumable after raising the budget)",
+                projected_usd=round(projected, 4),
+                budget_usd=settings.media_scan_budget_usd,
+            )
+            db.commit()
+            raise _BudgetExceeded(
+                f"projected ${projected:.2f} exceeds budget "
+                f"${settings.media_scan_budget_usd:.2f}"
+            )
+
         transcript_map: dict[str, str] = {}  # source_id -> transcript_id
         for src in selected_sources:
             if src.media_asset_id is None:
@@ -235,6 +284,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
             asset = db.get(MediaAsset, src.media_asset_id)
             if asset is None:
                 continue
+            needs_asr = asset.transcript_id is None
             result = transcribe_source(
                 db, source=src, asset=asset, events=events, live=live
             )
@@ -242,6 +292,13 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
                 transcript_map[src.id] = result.transcript.id
                 src.status = MediaSourceStatus.transcribed
                 db.add(src)
+                # Accrue ASR cost only when we actually transcribed (not reused).
+                if needs_asr and not result.reused:
+                    _accrue_cost(
+                        db,
+                        job,
+                        estimate_transcription_usd(src.duration_seconds, settings=settings),
+                    )
         db.commit()
         events.stage_completed(MediaScanStage.transcribe, transcribed=len(transcript_map))
         _record_stage(db, job, MediaScanStage.transcribe, {"transcript_map": transcript_map})
@@ -321,8 +378,13 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
                 src.status = MediaSourceStatus.extracted
                 db.add(src)
             total_signals += len(signals)
+            _accrue_cost(db, job, estimate_llm_calls_usd(1, settings=settings))
         db.commit()
-        events.stage_completed(MediaScanStage.extract_signals, signals=total_signals)
+        events.stage_completed(
+            MediaScanStage.extract_signals,
+            signals=total_signals,
+            cost_estimate_usd=round(job.cost_estimate_usd or 0.0, 4),
+        )
         _record_stage(db, job, MediaScanStage.extract_signals, {"signals": total_signals})
     else:
         events.stage_skipped(MediaScanStage.extract_signals, reason="already_done")

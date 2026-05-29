@@ -290,3 +290,47 @@ def test_live_media_scan_coerced_to_mock_when_mock_mode(
     )
     assert create.status_code == 201
     assert create.json()["mode"] == "mock"
+
+
+def test_budget_ceiling_stops_before_transcription(
+    client: TestClient, seeded_account: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A tiny per-scan budget hard-stops the scan before transcription, and the
+    job is left resumable (not silently completed)."""
+    # Force a punishingly small budget and a high ASR rate so projection trips.
+    monkeypatch.setenv("MEDIA_SCAN_BUDGET_USD", "0.01")
+    monkeypatch.setenv("COST_ASR_PER_MINUTE_USD", "1.0")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    create = client.post(
+        f"/api/v1/accounts/{seeded_account}/media-scans", json={"mode": "mock"}
+    ).json()
+    scan_id = create["media_scan_id"]
+    run_media_scan(scan_id)
+
+    status = client.get(f"/api/v1/media-scans/{scan_id}").json()
+    assert status["status"] == "failed"
+    assert "budget" in (status["last_error"] or "").lower()
+    # Discovery + ranking completed; transcription never ran.
+    assert status["stage_state_json"].get("rank_sources", {}).get("done") is True
+    assert status["stage_state_json"].get("transcribe", {}).get("done") is not True
+    assert status["counts"]["conversation_signals"] == 0
+
+    get_settings.cache_clear()
+
+
+def test_cost_telemetry_accrues_on_completed_scan(
+    client: TestClient, seeded_account: str
+) -> None:
+    """A completed scan reports a non-negative estimated cost."""
+    create = client.post(
+        f"/api/v1/accounts/{seeded_account}/media-scans", json={"mode": "mock"}
+    ).json()
+    scan_id = create["media_scan_id"]
+    run_media_scan(scan_id)
+
+    status = client.get(f"/api/v1/media-scans/{scan_id}").json()
+    assert status["status"] == "completed"
+    assert status["cost_estimate_usd"] >= 0.0
