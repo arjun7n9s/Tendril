@@ -23,7 +23,11 @@ from app.api import (
 )
 from app.config import get_settings
 from app.db import init_db
-from app.jobs.watchtower_runner import start_watchtower, stop_watchtower
+from app.jobs.watchtower_runner import (
+    reclaim_orphaned_media_scans,
+    start_watchtower,
+    stop_watchtower,
+)
 from app.logging_setup import configure_logging, get_logger
 
 
@@ -46,6 +50,7 @@ async def lifespan(app: FastAPI):
         version=__version__,
     )
     start_watchtower()
+    reclaim_orphaned_media_scans()
     yield
     stop_watchtower()
     log.info("app.shutdown")

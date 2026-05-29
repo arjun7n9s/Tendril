@@ -48,8 +48,15 @@ class MediaScanJob(TimestampMixin, Base):
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     score_delta: Mapped[int | None] = mapped_column(Integer, nullable=True)
     cost_estimate_usd: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    # Requested source cap for this scan (falls back to the global default).
+    max_sources: Mapped[int | None] = mapped_column(Integer, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Liveness heartbeat: updated as each stage starts. A reclaimer treats a
+    # non-terminal job whose heartbeat is stale as crashed and re-enqueues it.
+    last_heartbeat_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     account: Mapped[Account] = relationship("Account")
     media_sources: Mapped[list[MediaSource]] = relationship(

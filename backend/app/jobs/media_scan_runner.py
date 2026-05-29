@@ -104,6 +104,7 @@ def run_media_scan(job_id: str) -> None:
         events = MediaScanEventLogger(db, job_id)
         job.attempt_count = (job.attempt_count or 0) + 1
         job.started_at = job.started_at or _now()
+        job.last_heartbeat_at = _now()
         job.last_error = None
         db.add(job)
         db.commit()
@@ -137,6 +138,21 @@ def _record_stage(db: Session, job: MediaScanJob, stage: MediaScanStage, output:
     job.stage_state_json = state
     job.current_stage = stage
     job.progress_percent = _STAGE_PROGRESS.get(stage, job.progress_percent)
+    job.last_heartbeat_at = _now()
+    db.add(job)
+    db.commit()
+
+
+def _begin_stage(db: Session, job: MediaScanJob, stage: MediaScanStage) -> None:
+    """Mark a stage as in-progress *before* running it.
+
+    Writing `current_stage` at start (not just at completion) means a crash
+    or watchdog timeout points at the stage that was actually executing, not
+    the previously completed one. Also refreshes the liveness heartbeat so the
+    reclaimer can tell a running job from a dead one.
+    """
+    job.current_stage = stage
+    job.last_heartbeat_at = _now()
     db.add(job)
     db.commit()
 
@@ -162,7 +178,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     icp = load_default_icp(db)
     live = job.mode == MediaScanMode.live
-    max_sources = settings.media_scan_max_sources
+    max_sources = job.max_sources or settings.media_scan_max_sources
 
     log.info(
         "media_scan_runner.start",
@@ -174,6 +190,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     # ---------- Stage: discover_sources ----------
     if not _is_done(job, MediaScanStage.discover_sources):
+        _begin_stage(db, job, MediaScanStage.discover_sources)
         events.stage_started(MediaScanStage.discover_sources)
         sources: list[MediaSource] = []
         if live:
@@ -193,6 +210,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     # ---------- Stage: rank_sources ----------
     if not _is_done(job, MediaScanStage.rank_sources):
+        _begin_stage(db, job, MediaScanStage.rank_sources)
         events.stage_started(MediaScanStage.rank_sources)
         all_sources = _job_sources(db, job)
         selected = asyncio.run(
@@ -224,6 +242,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     # ---------- Stage: resolve_media + hash_media (CAS) ----------
     if not _is_done(job, MediaScanStage.hash_media):
+        _begin_stage(db, job, MediaScanStage.resolve_media)
         events.stage_started(MediaScanStage.resolve_media)
         cache_hits = 0
         for src in selected_sources:
@@ -243,6 +262,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     # ---------- Stage: transcribe ----------
     if not _is_done(job, MediaScanStage.transcribe):
+        _begin_stage(db, job, MediaScanStage.transcribe)
         events.stage_started(MediaScanStage.transcribe)
 
         # Budget gate: project ASR cost for sources that still need
@@ -309,6 +329,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     # ---------- Stage: scrub_transcript ----------
     if not _is_done(job, MediaScanStage.scrub_transcript):
+        _begin_stage(db, job, MediaScanStage.scrub_transcript)
         events.stage_started(MediaScanStage.scrub_transcript)
         scrubbed_count = 0
         sensitive_count = 0
@@ -353,6 +374,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     # ---------- Stage: extract_signals ----------
     if not _is_done(job, MediaScanStage.extract_signals):
+        _begin_stage(db, job, MediaScanStage.extract_signals)
         events.stage_started(MediaScanStage.extract_signals)
         total_signals = 0
         for src in selected_sources:
@@ -393,6 +415,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     # ---------- Stage: write_memory ----------
     if not _is_done(job, MediaScanStage.write_memory):
+        _begin_stage(db, job, MediaScanStage.write_memory)
         events.stage_started(MediaScanStage.write_memory)
         written = write_conversation_memory(
             job_id=job.id, account=account, signals=all_signals, events=events
@@ -405,6 +428,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     # ---------- Stage: score_account ----------
     if not _is_done(job, MediaScanStage.score_account):
+        _begin_stage(db, job, MediaScanStage.score_account)
         events.stage_started(MediaScanStage.score_account)
         delta = compute_score_delta(db, account=account, signals=all_signals)
         job.score_delta = delta.delta
@@ -448,6 +472,7 @@ def _execute(db: Session, job: MediaScanJob, events: MediaScanEventLogger) -> No
 
     # ---------- Stage: notify ----------
     if not _is_done(job, MediaScanStage.notify):
+        _begin_stage(db, job, MediaScanStage.notify)
         events.stage_started(MediaScanStage.notify)
         signal_count = len(all_signals)
         delta = score_state.get("delta", 0)

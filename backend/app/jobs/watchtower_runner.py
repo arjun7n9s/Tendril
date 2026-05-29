@@ -18,8 +18,20 @@ from app.db import get_sessionmaker
 from app.jobs.media_scan_runner import run_media_scan
 from app.logging_setup import get_logger
 from app.services import watchtower
+from app.services.media_reclaimer import reclaim_stalled_jobs
 
 log = get_logger("watchtower_runner")
+
+
+def _spawn_worker(job_id: str) -> None:
+    """Run a media scan on a daemon worker thread."""
+    worker = threading.Thread(
+        target=run_media_scan,
+        args=(job_id,),
+        name=f"media-scan-{job_id[:12]}",
+        daemon=True,
+    )
+    worker.start()
 
 
 class WatchtowerLoop:
@@ -31,16 +43,9 @@ class WatchtowerLoop:
         self._workers: list[threading.Thread] = []
 
     def _enqueue(self, job_id: str) -> None:
-        worker = threading.Thread(
-            target=run_media_scan,
-            args=(job_id,),
-            name=f"media-scan-{job_id[:12]}",
-            daemon=True,
-        )
-        worker.start()
+        _spawn_worker(job_id)
         # Drop references to finished workers so the list doesn't grow forever.
         self._workers = [w for w in self._workers if w.is_alive()]
-        self._workers.append(worker)
 
     def _run(self) -> None:
         settings = get_settings()
@@ -49,6 +54,8 @@ class WatchtowerLoop:
         while not self._stop.is_set():
             try:
                 with SessionLocal() as db:
+                    # Reclaim crashed/orphaned media scans first, then schedule.
+                    reclaim_stalled_jobs(db, enqueue=self._enqueue, settings=settings)
                     watchtower.tick(db, enqueue=self._enqueue, settings=settings)
             except Exception as exc:
                 log.warning("watchtower_runner.tick_failed", error=str(exc))
@@ -91,3 +98,20 @@ def stop_watchtower() -> None:
     if _loop is not None:
         _loop.stop()
         _loop = None
+
+
+def reclaim_orphaned_media_scans() -> None:
+    """One-shot reclaim of media scans orphaned by the previous shutdown/crash.
+
+    Runs at startup regardless of whether the watchtower loop is enabled, so a
+    server restart automatically resumes any in-flight scan from its last
+    completed stage. Each reclaimed scan runs on a daemon worker thread.
+    """
+    SessionLocal = get_sessionmaker()
+    try:
+        with SessionLocal() as db:
+            reclaimed = reclaim_stalled_jobs(db, enqueue=_spawn_worker)
+        if reclaimed:
+            log.info("watchtower_runner.startup_reclaim", count=len(reclaimed))
+    except Exception as exc:  # noqa: BLE001
+        log.warning("watchtower_runner.startup_reclaim_failed", error=str(exc))

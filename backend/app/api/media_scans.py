@@ -17,9 +17,8 @@ from app.models.enums import (
     MediaScanMode,
     MediaScanStage,
     MediaSourceStatus,
-    TranscriptionStatus,
+    PrivacyStatus,
 )
-from app.models.media_asset import MediaAsset
 from app.models.media_scan_event import MediaScanEvent
 from app.models.media_scan_job import MediaScanJob
 from app.models.media_source import MediaSource
@@ -54,7 +53,8 @@ _NON_TERMINAL = {
 }
 
 
-def _compute_counts(db: Session, job_id: str) -> MediaScanCounts:
+def _compute_counts(db: Session, job: MediaScanJob) -> MediaScanCounts:
+    job_id = job.id
     discovered = (
         db.scalar(
             select(func.count()).select_from(MediaSource).where(
@@ -87,36 +87,16 @@ def _compute_counts(db: Session, job_id: str) -> MediaScanCounts:
         )
         or 0
     )
-    # Transcripts + cache hits are derived from assets linked to this job's sources.
-    asset_ids = [
-        a
-        for (a,) in db.execute(
-            select(MediaSource.media_asset_id).where(
-                MediaSource.media_scan_job_id == job_id,
-                MediaSource.media_asset_id.is_not(None),
-            )
-        ).all()
-    ]
-    transcripts = 0
-    cache_hits = 0
-    if asset_ids:
-        transcripts = (
-            db.scalar(
-                select(func.count(func.distinct(Transcript.id))).where(
-                    Transcript.media_asset_id.in_(asset_ids)
-                )
-            )
-            or 0
-        )
-        cache_hits = (
-            db.scalar(
-                select(func.count()).select_from(MediaAsset).where(
-                    MediaAsset.id.in_(asset_ids),
-                    MediaAsset.transcription_status == TranscriptionStatus.reused,
-                )
-            )
-            or 0
-        )
+    # Transcripts produced *by this scan* and cache hits are read from the
+    # job's own recorded stage state — an immutable, per-scan record. Deriving
+    # cache hits from the shared MediaAsset.transcription_status would let a
+    # later scan retroactively flip an older scan's counts.
+    state = job.stage_state_json or {}
+    transcribe_state = state.get("transcribe", {}) or {}
+    hash_state = state.get("hash_media", {}) or {}
+    transcript_map = transcribe_state.get("transcript_map", {}) or {}
+    transcripts = len(set(transcript_map.values()))
+    cache_hits = int(hash_state.get("cache_hits", 0) or 0)
     memory_writes = (
         db.scalar(
             select(func.count()).select_from(MediaScanEvent).where(
@@ -171,7 +151,7 @@ def _job_to_read(db: Session, job: MediaScanJob) -> MediaScanRead:
         completed_at=job.completed_at,
         created_at=job.created_at,
         updated_at=job.updated_at,
-        counts=_compute_counts(db, job.id),
+        counts=_compute_counts(db, job),
     )
 
 
@@ -221,6 +201,7 @@ def create_media_scan(
         status=MediaScanStage.queued,
         current_stage=MediaScanStage.queued,
         stage_state_json={},
+        max_sources=body.max_sources,
         progress_percent=0,
     )
     db.add(job)
@@ -329,6 +310,25 @@ def list_account_media_sources(
     return [MediaSourceRead.model_validate(r) for r in rows]
 
 
+def _redact_signal(signal: ConversationSignalRead) -> ConversationSignalRead:
+    """Mask free text on a sensitive-flagged signal.
+
+    Even when a sensitive signal is explicitly requested (include_sensitive),
+    its quote and narrative text must never be exposed for outreach use. We
+    keep the structured metadata (type, score, timing, privacy status) so the
+    UI can show that something was found and *why* it's withheld.
+    """
+    if signal.privacy_status != PrivacyStatus.sensitive_blocked:
+        return signal
+    redacted = "[withheld — sensitive content]"
+    signal.summary = redacted
+    signal.fact_text = redacted
+    signal.inference_text = redacted
+    signal.recommended_action = None
+    signal.quote_text = redacted
+    return signal
+
+
 @router.get(
     "/api/v1/accounts/{account_id}/conversation-signals",
     response_model=ConversationSignalList,
@@ -336,6 +336,7 @@ def list_account_media_sources(
 def list_account_conversation_signals(
     account_id: str,
     latest_only: bool = True,
+    include_sensitive: bool = False,
     limit: int = 100,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -346,6 +347,17 @@ def list_account_conversation_signals(
         .select_from(ConversationSignal)
         .where(ConversationSignal.account_id == account_id)
     )
+    # Enterprise posture: signals flagged sensitive_blocked are excluded from
+    # the default response entirely. They can only be surfaced with an explicit
+    # include_sensitive=true, and even then their free text is masked below so
+    # sensitive personal content never reaches outreach or the default UI.
+    if not include_sensitive:
+        stmt = stmt.where(
+            ConversationSignal.privacy_status != PrivacyStatus.sensitive_blocked
+        )
+        count_stmt = count_stmt.where(
+            ConversationSignal.privacy_status != PrivacyStatus.sensitive_blocked
+        )
     if latest_only:
         latest_job = db.scalar(
             select(MediaScanJob)
@@ -368,14 +380,25 @@ def list_account_conversation_signals(
         .offset(offset)
     ).all()
     return ConversationSignalList(
-        items=[ConversationSignalRead.model_validate(r) for r in rows],
+        items=[_redact_signal(ConversationSignalRead.model_validate(r)) for r in rows],
         total=total,
     )
 
 
 @router.get("/api/v1/transcripts/{transcript_id}", response_model=TranscriptRead)
-def get_transcript(transcript_id: str, db: Session = Depends(get_db)) -> TranscriptRead:
+def get_transcript(
+    transcript_id: str,
+    include_sensitive: bool = False,
+    db: Session = Depends(get_db),
+) -> TranscriptRead:
     transcript = db.get(Transcript, transcript_id)
     if transcript is None:
         raise HTTPException(status_code=404, detail="transcript_not_found")
-    return TranscriptRead.model_validate(transcript)
+    read = TranscriptRead.model_validate(transcript)
+    # Mask the transcript body when sensitive content was detected, unless an
+    # explicit override is passed. The metadata (status, findings) is still
+    # returned so the UI can explain *why* the body is withheld.
+    if transcript.pii_status == PrivacyStatus.sensitive_blocked and not include_sensitive:
+        read.scrubbed_text = None
+        read.segments_json = None
+    return read

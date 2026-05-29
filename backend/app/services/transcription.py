@@ -105,7 +105,7 @@ def transcribe_source(
             return None
         try:
             segments, confidence, language = _speechmatics_transcribe(
-                source=source, events=events
+                db, source=source, asset=asset, events=events
             )
         except Exception as exc:
             events.warning(
@@ -113,8 +113,10 @@ def transcribe_source(
                 stage=MediaScanStage.transcribe,
                 error_type=type(exc).__name__,
             )
+            # The submitted job id (if any) is already persisted on the asset
+            # by `_speechmatics_transcribe`, so a resume polls it instead of
+            # resubmitting — this is what prevents double-billing on a crash.
             asset.transcription_status = TranscriptionStatus.failed
-            asset.speechmatics_job_id = getattr(exc, "job_id", None)
             db.add(asset)
             db.flush()
             return None
@@ -182,9 +184,14 @@ def _coerce_provider(raw: str) -> TranscriptProvider:
 
 
 def _speechmatics_transcribe(
-    *, source: MediaSource, events: MediaScanEventLogger
+    db: Session, *, source: MediaSource, asset: MediaAsset, events: MediaScanEventLogger
 ) -> tuple[list[dict], float | None, str | None]:
-    """Submit and poll a Speechmatics batch job with diarization.
+    """Submit (or resume) and poll a Speechmatics batch job with diarization.
+
+    Crash-safety / no-double-billing: the provider job id is persisted to the
+    asset with an immediate commit *right after submit, before waiting*. If the
+    process dies during the wait, a resume finds the stored job id and polls
+    that existing job instead of submitting a new one — so we never pay twice.
 
     Uses the optional `speechmatics-batch` SDK (declared under the `voice`
     extra). Raises on failure so the caller can mark the stage resumable.
@@ -206,12 +213,28 @@ def _speechmatics_transcribe(
         operating_point="enhanced",
     )
     with BatchClient(conn) as client:
-        job_id = client.submit_job(audio=source.source_url, transcription_config=config)
-        events.speechmatics_call(
-            "submitted batch job",
-            stage=MediaScanStage.transcribe,
-            job_id=job_id,
-        )
+        job_id = asset.speechmatics_job_id
+        if job_id:
+            # Resume: a job was already submitted for this asset. Poll it
+            # rather than resubmitting (prevents double-billing on crash).
+            events.speechmatics_call(
+                "resuming existing batch job (no resubmit)",
+                stage=MediaScanStage.transcribe,
+                job_id=job_id,
+            )
+        else:
+            job_id = client.submit_job(audio=source.source_url, transcription_config=config)
+            # Persist the job id BEFORE waiting, and commit immediately so a
+            # crash during the wait leaves a recoverable pointer.
+            asset.speechmatics_job_id = job_id
+            asset.transcription_status = TranscriptionStatus.in_progress
+            db.add(asset)
+            db.commit()
+            events.speechmatics_call(
+                "submitted batch job",
+                stage=MediaScanStage.transcribe,
+                job_id=job_id,
+            )
         transcript = client.wait_for_completion(job_id, transcription_format="json-v2")
 
     segments: list[dict] = []
