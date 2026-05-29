@@ -336,6 +336,99 @@ def test_cost_telemetry_accrues_on_completed_scan(
     assert status["cost_estimate_usd"] >= 0.0
 
 
+def test_max_sources_request_is_honored(
+    client: TestClient, seeded_account: str
+) -> None:
+    """The per-request max_sources cap is persisted and used by the runner,
+    not just the global default."""
+    create = client.post(
+        f"/api/v1/accounts/{seeded_account}/media-scans",
+        json={"mode": "mock", "max_sources": 1},
+    ).json()
+    scan_id = create["media_scan_id"]
+    run_media_scan(scan_id)
+
+    status = client.get(f"/api/v1/media-scans/{scan_id}").json()
+    assert status["status"] == "completed"
+    # With a cap of 1, only one source is selected/processed.
+    assert status["counts"]["sources_selected"] == 1
+
+
+def test_sensitive_signal_suppressed_by_default(
+    client: TestClient, seeded_account: str
+) -> None:
+    """Sensitive-flagged conversation signals are excluded by default and their
+    text is masked even when explicitly included."""
+    from app.db import get_sessionmaker
+    from app.models.conversation_signal import ConversationSignal
+    from app.models.enums import PrivacyStatus, SignalType
+    from app.models.media_scan_job import MediaScanJob
+
+    media = client.post(
+        f"/api/v1/accounts/{seeded_account}/media-scans", json={"mode": "mock"}
+    ).json()
+    run_media_scan(media["media_scan_id"])
+
+    # Inject a sensitive-flagged signal directly.
+    SessionLocal = get_sessionmaker()
+    with SessionLocal() as db:
+        job = db.get(MediaScanJob, media["media_scan_id"])
+        db.add(
+            ConversationSignal(
+                media_scan_job_id=job.id,
+                account_id=seeded_account,
+                signal_type=SignalType.other,
+                title="Sensitive personal detail",
+                summary="contains private content",
+                source_url="https://example.com/sensitive",
+                quote_text="a private remark",
+                confidence=0.9,
+                privacy_status=PrivacyStatus.sensitive_blocked,
+            )
+        )
+        db.commit()
+
+    # Default: sensitive signal excluded.
+    default = client.get(
+        f"/api/v1/accounts/{seeded_account}/conversation-signals"
+    ).json()
+    assert all(
+        s["privacy_status"] != "sensitive_blocked" for s in default["items"]
+    )
+
+    # Explicit include: present but text masked.
+    included = client.get(
+        f"/api/v1/accounts/{seeded_account}/conversation-signals",
+        params={"include_sensitive": "true"},
+    ).json()
+    sensitive = [s for s in included["items"] if s["privacy_status"] == "sensitive_blocked"]
+    assert sensitive, "sensitive signal should appear with include_sensitive"
+    assert "withheld" in (sensitive[0]["quote_text"] or "").lower()
+
+
+def test_cache_hits_not_retroactively_attributed(
+    client: TestClient, seeded_account: str
+) -> None:
+    """A later scan's cache reuse must not change an earlier scan's reported
+    cache_hits (counts come from each job's own recorded state)."""
+    first = client.post(
+        f"/api/v1/accounts/{seeded_account}/media-scans", json={"mode": "mock"}
+    ).json()["media_scan_id"]
+    run_media_scan(first)
+    first_hits = client.get(f"/api/v1/media-scans/{first}").json()["counts"]["cache_hits"]
+
+    second = client.post(
+        f"/api/v1/accounts/{seeded_account}/media-scans", json={"mode": "mock"}
+    ).json()["media_scan_id"]
+    run_media_scan(second)
+
+    # The first scan's reported cache_hits is unchanged by the second scan.
+    first_hits_after = client.get(f"/api/v1/media-scans/{first}").json()["counts"][
+        "cache_hits"
+    ]
+    assert first_hits_after == first_hits
+
+
 def test_media_scan_moves_unified_account_score(
     client: TestClient, seeded_account: str
 ) -> None:

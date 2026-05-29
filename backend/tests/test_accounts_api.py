@@ -125,6 +125,21 @@ def test_list_accounts_filters_sales_ready_and_near_miss(
                     score_reasoning_json={"x": 1},
                 )
             )
+            # List filters read the unified snapshot (so spoken evidence counts),
+            # so stamp a matching snapshot too.
+            from app.services.account_scoring import record_web_snapshot
+
+            record_web_snapshot(
+                db,
+                account_id=acc.id,
+                fit=24,
+                timing=20,
+                relationship=12,
+                evidence=14,
+                total=total,
+                sales_ready=sales_ready,
+                origin_id=scan.id,
+            )
         db.commit()
 
     sr = client.get("/api/v1/accounts", params={"sales_ready": "true"}).json()

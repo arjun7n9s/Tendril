@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models.account import Account
+from app.models.account_score_snapshot import AccountScoreSnapshot
 from app.models.brief import Brief
 from app.models.enums import AccountStatus
 from app.models.scan import Scan
@@ -23,17 +24,20 @@ from app.schemas.signal import SignalRead
 router = APIRouter(prefix="/api/v1/accounts", tags=["accounts"])
 
 
-def _latest_score_subquery():
-    """Subquery returning the latest score row per account."""
-    inner = (
+def _latest_snapshot_subquery():
+    """Subquery returning the latest unified score snapshot per account.
+
+    Uses `account_score_snapshots` (written by *both* web and media scans) so
+    list filters react to spoken evidence, not just web scans.
+    """
+    return (
         select(
-            Score.account_id.label("account_id"),
-            func.max(Score.created_at).label("max_created"),
+            AccountScoreSnapshot.account_id.label("account_id"),
+            func.max(AccountScoreSnapshot.created_at).label("max_created"),
         )
-        .group_by(Score.account_id)
+        .group_by(AccountScoreSnapshot.account_id)
         .subquery()
     )
-    return inner
 
 
 @router.get("", response_model=AccountListResponse)
@@ -73,33 +77,39 @@ def list_accounts(
         )
 
     if sales_ready is not None or near_miss is not None:
-        latest = _latest_score_subquery()
+        latest = _latest_snapshot_subquery()
         join_condition = and_(
-            Score.account_id == latest.c.account_id,
-            Score.created_at == latest.c.max_created,
+            AccountScoreSnapshot.account_id == latest.c.account_id,
+            AccountScoreSnapshot.created_at == latest.c.max_created,
         )
-        stmt = stmt.join(Score, Score.account_id == Account.id).join(
-            latest, join_condition
-        )
-        count_stmt = count_stmt.join(Score, Score.account_id == Account.id).join(
-            latest, join_condition
-        )
+        stmt = stmt.join(
+            AccountScoreSnapshot, AccountScoreSnapshot.account_id == Account.id
+        ).join(latest, join_condition)
+        count_stmt = count_stmt.join(
+            AccountScoreSnapshot, AccountScoreSnapshot.account_id == Account.id
+        ).join(latest, join_condition)
         if sales_ready is not None:
-            stmt = stmt.where(Score.sales_ready.is_(sales_ready))
-            count_stmt = count_stmt.where(Score.sales_ready.is_(sales_ready))
+            stmt = stmt.where(AccountScoreSnapshot.sales_ready.is_(sales_ready))
+            count_stmt = count_stmt.where(AccountScoreSnapshot.sales_ready.is_(sales_ready))
         if near_miss is True:
-            stmt = stmt.where(Score.sales_ready.is_(False)).where(
-                Score.total_score >= 55, Score.total_score <= 69
+            stmt = stmt.where(AccountScoreSnapshot.sales_ready.is_(False)).where(
+                AccountScoreSnapshot.total_score >= 55, AccountScoreSnapshot.total_score <= 69
             )
-            count_stmt = count_stmt.where(Score.sales_ready.is_(False)).where(
-                Score.total_score >= 55, Score.total_score <= 69
+            count_stmt = count_stmt.where(AccountScoreSnapshot.sales_ready.is_(False)).where(
+                AccountScoreSnapshot.total_score >= 55, AccountScoreSnapshot.total_score <= 69
             )
         elif near_miss is False:
             stmt = stmt.where(
-                or_(Score.sales_ready.is_(True), Score.total_score < 55)
+                or_(
+                    AccountScoreSnapshot.sales_ready.is_(True),
+                    AccountScoreSnapshot.total_score < 55,
+                )
             )
             count_stmt = count_stmt.where(
-                or_(Score.sales_ready.is_(True), Score.total_score < 55)
+                or_(
+                    AccountScoreSnapshot.sales_ready.is_(True),
+                    AccountScoreSnapshot.total_score < 55,
+                )
             )
 
     total = db.scalar(count_stmt) or 0
