@@ -40,7 +40,10 @@ from app.services.blessed_runs import (
     find_snapshot_by_domain,
     load_snapshot_for_account,
 )
-from app.services.memory_service import JsonlMemoryService, MemoryPacket
+from app.services.memory_service import (
+    MemoryPacket,
+    build_memory_service,
+)
 from app.services.scan_events import ScanEventLogger
 
 log = get_logger("cache_runner")
@@ -105,7 +108,7 @@ def replay_blessed_run(db: Session, scan: Scan) -> bool:
 
     events = ScanEventLogger(db, scan.id)
     settings = get_settings()
-    memory = JsonlMemoryService(MEMORY_DIR, event_logger=events, replayed=True)
+    memory = build_memory_service(MEMORY_DIR, event_logger=events, replayed=True)
     captured_from = snapshot.get("captured_from_scan_id")
 
     events.info(

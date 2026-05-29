@@ -55,7 +55,7 @@ export function Sidebar() {
     <nav
       aria-label="Primary"
       className={cn(
-        "hidden md:flex h-full shrink-0 flex-col border-r border-border/40 bg-surface/65 backdrop-blur-md",
+        "hidden md:flex h-full shrink-0 flex-col border-r border-border/30 bg-surface",
         "w-[212px]",
       )}
     >
@@ -63,13 +63,13 @@ export function Sidebar() {
         href="/accounts"
         className="flex h-12 items-center gap-2 px-4 text-[15px] font-semibold tracking-[-0.015em] text-fg-primary hover:opacity-90 transition-opacity"
       >
-        <span aria-hidden className="text-cobalt">
+        <span aria-hidden className="text-fg-primary">
           <TendrilGlyph />
         </span>
         <span className="bg-gradient-to-r from-fg-primary to-fg-secondary bg-clip-text text-transparent">Tendril</span>
       </Link>
-      <div className="border-t border-border/30" />
-      <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2">
+      <div className="border-t border-border/20" />
+      <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
         {NAV_ITEMS.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -97,18 +97,17 @@ export function Sidebar() {
               <Link
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-[var(--radius-button)] px-2.5 py-1.5 text-[13px] font-medium transition-all duration-200 ease-out border",
-                  "hover:scale-[1.02] active:scale-[0.98]",
+                  "flex items-center gap-2.5 rounded-[var(--radius-button)] px-2.5 py-1.5 text-[13px] font-medium transition-colors duration-150 border",
                   isActive
-                    ? "bg-surface/80 border-border/60 text-fg-primary shadow-flat shadow-glow-cobalt/10"
-                    : "text-fg-secondary border-transparent hover:bg-raised/70 hover:text-fg-primary",
+                    ? "bg-raised border-border/60 text-fg-primary shadow-flat"
+                    : "text-fg-secondary border-transparent hover:bg-raised/60 hover:text-fg-primary",
                 )}
                 aria-current={isActive ? "page" : undefined}
               >
-                <Icon className={cn("size-4 transition-transform duration-200", isActive ? "text-cobalt scale-110" : "text-fg-secondary")} aria-hidden />
+                <Icon className={cn("size-4", isActive ? "text-fg-primary" : "text-fg-secondary")} aria-hidden />
                 {item.label}
                 {isActive && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2.5px] h-[16px] rounded-r-full bg-cobalt shadow-[0_0_8px_rgba(52,87,213,0.6)]" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[14px] rounded-r-full bg-fg-primary" />
                 )}
               </Link>
             </li>
@@ -116,15 +115,15 @@ export function Sidebar() {
         })}
       </ul>
       
-      <div className="mx-3 mb-1.5 flex items-center justify-between rounded-[var(--radius-button)] border border-border/40 bg-surface/30 p-1 backdrop-blur-sm">
+      <div className="mx-3 mb-1.5 flex items-center justify-between rounded-[var(--radius-button)] border border-border/20 bg-raised/30 p-1">
         <span className="pl-2 text-[10.5px] font-medium tracking-[0.02em] text-fg-secondary">Theme</span>
         <div className="flex items-center gap-0.5">
           <button
             onClick={() => setTheme("light")}
             className={cn(
-              "p-1.5 rounded-[var(--radius-button)] transition-all duration-200 cursor-pointer",
+              "p-1.5 rounded-[var(--radius-button)] transition-colors duration-150 cursor-pointer border border-transparent",
               mounted && theme === "light"
-                ? "bg-surface text-cobalt shadow-flat"
+                ? "bg-surface text-fg-primary shadow-flat border-border/40"
                 : "text-fg-muted hover:text-fg-primary"
             )}
             title="Light theme"
@@ -135,9 +134,9 @@ export function Sidebar() {
           <button
             onClick={() => setTheme("dark")}
             className={cn(
-              "p-1.5 rounded-[var(--radius-button)] transition-all duration-200 cursor-pointer",
+              "p-1.5 rounded-[var(--radius-button)] transition-colors duration-150 cursor-pointer border border-transparent",
               mounted && theme === "dark"
-                ? "bg-surface text-cobalt shadow-flat"
+                ? "bg-surface text-fg-primary shadow-flat border-border/40"
                 : "text-fg-muted hover:text-fg-primary"
             )}
             title="Dark theme"
@@ -148,9 +147,9 @@ export function Sidebar() {
           <button
             onClick={() => setTheme("system")}
             className={cn(
-              "p-1.5 rounded-[var(--radius-button)] transition-all duration-200 cursor-pointer",
+              "p-1.5 rounded-[var(--radius-button)] transition-colors duration-150 cursor-pointer border border-transparent",
               mounted && theme === "system"
-                ? "bg-surface text-cobalt shadow-flat"
+                ? "bg-surface text-fg-primary shadow-flat border-border/40"
                 : "text-fg-muted hover:text-fg-primary"
             )}
             title="System theme"
@@ -161,9 +160,9 @@ export function Sidebar() {
         </div>
       </div>
 
-      <div className="m-3 rounded-[var(--radius-card)] border border-border/50 bg-surface/40 p-3 text-[12px] leading-snug text-fg-muted backdrop-blur-sm shadow-flat">
+      <div className="m-3 rounded-[var(--radius-card)] border border-border/40 bg-raised/20 p-3 text-[12px] leading-snug text-fg-muted shadow-flat">
         <div className="mb-1.5 inline-flex items-center gap-1.5 font-medium text-fg-secondary">
-          <CircleAlert className="size-3.5 text-cobalt animate-pulse" aria-hidden />
+          <CircleAlert className="size-3.5 text-fg-secondary animate-pulse" aria-hidden />
           <span>Demo Engine Active</span>
         </div>
         <p className="text-[11px] leading-normal text-fg-secondary">

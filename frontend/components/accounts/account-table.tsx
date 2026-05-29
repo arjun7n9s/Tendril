@@ -2,6 +2,7 @@
 
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { MonogramTile } from "@/components/primitives/monogram-tile";
 import { StatusChip } from "@/components/primitives/status-chip";
@@ -16,6 +17,24 @@ type AccountTableProps = {
 };
 
 export function AccountTable({ rows, isLoading }: AccountTableProps) {
+  const router = useRouter();
+
+  const handleRowClick = (e: React.MouseEvent, accountId: string) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("a") || target.closest("button")) {
+      return;
+    }
+    if (
+      e.ctrlKey ||
+      e.metaKey ||
+      e.button === 1 ||
+      window.getSelection()?.toString()
+    ) {
+      return;
+    }
+    router.push(`/accounts/${accountId}`);
+  };
+
   if (isLoading) {
     return (
       <div className="overflow-hidden rounded-[var(--radius-card)] border border-[color:var(--color-border-default)] bg-[color:var(--color-surface)]">
@@ -100,10 +119,11 @@ export function AccountTable({ rows, isLoading }: AccountTableProps) {
             {rows.map((account, idx) => (
               <tr
                 key={account.id}
+                onClick={(e) => handleRowClick(e, account.id)}
                 className={cn(
-                  "group cursor-pointer border-b border-border/30 last:border-b-0 transition-all duration-200 ease-out",
-                  "hover:bg-surface/85 hover:shadow-flat hover:scale-[1.001]",
-                  idx % 2 === 1 ? "bg-surface/40" : "bg-transparent",
+                  "group cursor-pointer border-b border-border/20 last:border-b-0 transition-colors duration-150 ease-out",
+                  "hover:bg-raised/70 dark:hover:bg-raised/40",
+                  idx % 2 === 1 ? "bg-surface/30" : "bg-transparent",
                 )}
               >
                 <td className="px-4 py-2.5">
@@ -113,7 +133,7 @@ export function AccountTable({ rows, isLoading }: AccountTableProps) {
                   >
                     <MonogramTile name={account.name} seed={account.id} size="md" />
                     <span className="flex flex-col">
-                      <span className="font-medium">{account.name}</span>
+                      <span className="font-medium group-hover:text-fg-primary transition-colors">{account.name}</span>
                       {account.domain ? (
                         <span className="text-[11.5px] text-fg-muted">
                           {account.domain}
@@ -121,7 +141,7 @@ export function AccountTable({ rows, isLoading }: AccountTableProps) {
                       ) : null}
                     </span>
                     <ArrowUpRight
-                      className="ml-1.5 size-3.5 text-fg-muted opacity-0 -translate-x-0.5 translate-y-0.5 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0"
+                      className="ml-1 size-3.5 text-fg-muted opacity-0 -translate-x-0.5 translate-y-0.5 transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0"
                       aria-hidden
                     />
                   </Link>

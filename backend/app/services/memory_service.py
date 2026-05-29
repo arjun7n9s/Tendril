@@ -40,9 +40,7 @@ class MemoryPacket:
     signal_id: str | None = None
     person_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
-    written_at: str = field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    written_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 @dataclass
@@ -124,3 +122,51 @@ def _host(url: str | None) -> str | None:
     from app.services.sanitization import host_of
 
     return host_of(url)
+
+
+def build_memory_service(
+    base_dir: Path,
+    *,
+    event_logger: ScanEventLogger | None = None,
+    replayed: bool = False,
+) -> MemoryService:
+    """Pick a MemoryService implementation based on settings.
+
+    - `TENDRIL_MEMORY_BACKEND=jsonl` (default): writes to `var/memory/scan_<id>.jsonl`.
+    - `TENDRIL_MEMORY_BACKEND=cognee`: returns the Cognee-backed adapter.
+      If Cognee init fails, we log a warning and fall back to JSONL so the
+      scan pipeline never breaks.
+
+    Keeping this factory in one place means scan_runner and cache_runner
+    do not need to know which backend is active.
+    """
+    from app.config import get_settings  # local import to avoid cycle
+    from app.logging_setup import get_logger
+
+    settings = get_settings()
+    backend = (settings.tendril_memory_backend or "jsonl").lower()
+    log = get_logger("memory")
+
+    if backend == "cognee":
+        try:
+            from app.services.cognee_memory import (  # type: ignore[import-not-found]
+                CogneeMemoryService,
+            )
+
+            return CogneeMemoryService(
+                dataset_prefix=settings.cognee_dataset_prefix,
+                fallback_dir=base_dir,
+                event_logger=event_logger,
+                replayed=replayed,
+            )
+        except Exception as exc:
+            log.warning(
+                "memory.cognee_init_failed_falling_back_to_jsonl",
+                err=str(exc),
+            )
+
+    return JsonlMemoryService(
+        base_dir,
+        event_logger=event_logger,
+        replayed=replayed,
+    )

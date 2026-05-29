@@ -69,11 +69,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="bg-canvas text-fg-primary min-h-full antialiased relative">
-        {/* Dynamic moving ambient background gradients */}
-        <div className="pointer-events-none fixed inset-0 -z-50 overflow-hidden bg-canvas">
-          <div className="absolute -top-[35%] -left-[15%] h-[75%] w-[75%] rounded-full bg-gradient-to-br from-signal-soft/45 to-cobalt-soft/35 blur-[120px] animate-aurora-slow" />
-          <div className="absolute -bottom-[35%] -right-[15%] h-[75%] w-[75%] rounded-full bg-gradient-to-tr from-graph-soft/35 to-cobalt-soft/45 blur-[120px] animate-aurora-slower" />
-        </div>
+        {/* Subtle technical grid pattern */}
+        <div className="pointer-events-none fixed inset-0 -z-50 overflow-hidden bg-canvas opacity-[0.22] dark:opacity-[0.15] grid-dots" />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>

@@ -9,34 +9,30 @@
 
 @theme {
   /* Surfaces */
-  --color-canvas: #f7f8f6;
+  --color-canvas: #fafafa;
   --color-surface: #ffffff;
-  --color-raised: #f1f4f2;
+  --color-raised: #f4f4f5;
 
   /* Text */
-  --color-fg-primary: #171a1c;
-  --color-fg-secondary: #5d656b;
-  --color-fg-muted: #6a7074; /* tuned by scripts/contrast-audit.mjs to clear AA on canvas, surface, and raised */
+  --color-fg-primary: #09090b;
+  --color-fg-secondary: #71717a;
+  --color-fg-muted: #a1a1aa;
 
   /* Border */
-  --color-border-default: #dde3e0;
-  --color-border-strong: #c8d0cc;
+  --color-border-default: #e4e4e7;
+  --color-border-strong: #d4d4d8;
 
-  /* Semantic accents
-     Accent foreground hexes were tuned via scripts/contrast-audit.mjs
-     so chip text on its soft background and white text on the solid
-     fill both clear WCAG AA (4.5:1). Cobalt already cleared at the
-     architecture's published value. */
-  --color-signal: #0c7c56; /* sales-ready / verified */
-  --color-signal-soft: #e6f4ee;
-  --color-cobalt: #3457d5; /* live process / scan */
-  --color-cobalt-soft: #e6ecfb;
-  --color-evidence: #995f17; /* inferred / amber */
-  --color-evidence-soft: #faecd6;
-  --color-risk: #ba3e38; /* failure / risk */
-  --color-risk-soft: #fbe5e3;
-  --color-graph: #107575; /* memory / relationships */
-  --color-graph-soft: #d9efef;
+  /* Semantic accents */
+  --color-signal: #10b981; /* sales-ready / verified */
+  --color-signal-soft: #ecfdf5;
+  --color-cobalt: #4f46e5; /* live process / scan */
+  --color-cobalt-soft: #e0e7ff;
+  --color-evidence: #d97706; /* amber / inferred */
+  --color-evidence-soft: #fef3c7;
+  --color-risk: #dc2626; /* failure / risk */
+  --color-risk-soft: #fee2e2;
+  --color-graph: #0891b2; /* memory / relationships */
+  --color-graph-soft: #ecfeff;
 
   /* Radii */
   --radius-card: 8px;
@@ -44,18 +40,16 @@
   --radius-input: 6px;
   --radius-chip: 4px;
 
-  /* Shadows — restrained, used only on floating layers */
-  --shadow-flat: 0 1px 0 rgba(23, 26, 28, 0.04);
-  --shadow-raised: 0 1px 2px rgba(23, 26, 28, 0.06), 0 0 0 1px rgba(23, 26, 28, 0.04);
-  --shadow-overlay: 0 24px 48px -12px rgba(23, 26, 28, 0.18), 0 0 0 1px rgba(23, 26, 28, 0.08);
+  /* Shadows — clean, restrained modern web style */
+  --shadow-flat: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-raised: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-overlay: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
 
-  /* Fonts wired to next/font CSS variables */
+  /* Fonts */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", monospace;
 
-  /* shadcn-compatible role tokens. We map them onto our palette so the
-     ecosystem of shadcn primitives renders inside Tendril's brand tokens
-     without leaking grayscale defaults. */
+  /* shadcn mappings */
   --color-background: var(--color-canvas);
   --color-foreground: var(--color-fg-primary);
   --color-card: var(--color-surface);
@@ -76,39 +70,6 @@
   --color-input: var(--color-border-default);
   --color-ring: var(--color-signal);
   --radius: var(--radius-card);
-
-  /* Drifting aurora background animations & premium custom properties */
-  --animate-aurora-slow: aurora-slow 35s infinite alternate ease-in-out;
-  --animate-aurora-slower: aurora-slower 45s infinite alternate ease-in-out;
-  --shadow-glow-emerald: 0 0 20px rgba(12, 124, 86, 0.12);
-  --shadow-glow-cobalt: 0 0 20px rgba(52, 87, 213, 0.12);
-  --shadow-glow-amber: 0 0 20px rgba(153, 95, 23, 0.12);
-
-  @keyframes aurora-slow {
-    0% {
-      transform: translate(0px, 0px) rotate(0deg) scale(1);
-    }
-    33% {
-      transform: translate(40px, -50px) rotate(120deg) scale(1.04);
-    }
-    66% {
-      transform: translate(-30px, 30px) rotate(240deg) scale(0.96);
-    }
-    100% {
-      transform: translate(0px, 0px) rotate(360deg) scale(1);
-    }
-  }
-  @keyframes aurora-slower {
-    0% {
-      transform: translate(0px, 0px) rotate(0deg) scale(1);
-    }
-    50% {
-      transform: translate(-50px, 40px) rotate(-180deg) scale(1.06);
-    }
-    100% {
-      transform: translate(0px, 0px) rotate(-360deg) scale(1);
-    }
-  }
 }
 
 /* ----------------------------------------------------------------------
@@ -117,27 +78,27 @@
 
 @layer base {
   .dark {
-    --color-canvas: #090b0c;
-    --color-surface: #0f1315;
-    --color-raised: #171c1e;
+    --color-canvas: #09090b;
+    --color-surface: #09090b;
+    --color-raised: #18181b;
 
-    --color-fg-primary: #f0f3f4;
-    --color-fg-secondary: #9faeb6;
-    --color-fg-muted: #75858f;
+    --color-fg-primary: #fafafa;
+    --color-fg-secondary: #a1a1aa;
+    --color-fg-muted: #71717a;
 
-    --color-border-default: #22282b;
-    --color-border-strong: #31393d;
+    --color-border-default: #27272a;
+    --color-border-strong: #3f3f46;
 
     --color-signal: #10b981;
-    --color-signal-soft: rgba(16, 185, 129, 0.12);
+    --color-signal-soft: rgba(16, 185, 129, 0.1);
     --color-cobalt: #6366f1;
-    --color-cobalt-soft: rgba(99, 102, 241, 0.12);
+    --color-cobalt-soft: rgba(99, 102, 241, 0.1);
     --color-evidence: #f59e0b;
-    --color-evidence-soft: rgba(245, 158, 11, 0.12);
+    --color-evidence-soft: rgba(245, 158, 11, 0.1);
     --color-risk: #f43f5e;
-    --color-risk-soft: rgba(244, 63, 94, 0.12);
+    --color-risk-soft: rgba(244, 63, 94, 0.1);
     --color-graph: #06b6d4;
-    --color-graph-soft: rgba(6, 182, 212, 0.12);
+    --color-graph-soft: rgba(6, 182, 212, 0.1);
 
     --color-background: var(--color-canvas);
     --color-foreground: var(--color-fg-primary);
@@ -158,6 +119,20 @@
     --color-border: var(--color-border-default);
     --color-input: var(--color-border-default);
     --color-ring: var(--color-signal);
+
+    /* Dark Mode Shadow Overrides */
+    --shadow-flat: 0 1px 0 rgba(0, 0, 0, 0.2);
+    --shadow-raised: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    --shadow-overlay: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  /* Technical grid layout */
+  .grid-dots {
+    background-size: 24px 24px;
+    background-image: radial-gradient(circle, var(--color-border-default) 1px, transparent 1px);
+  }
+  .dark .grid-dots {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1.2px, transparent 1.2px);
   }
 
   *,
@@ -310,26 +285,17 @@
    ---------------------------------------------------------------------- */
 
 .react-flow__edge-path {
-  stroke-dasharray: 6 6;
-  animation: react-flow-dash 30s linear infinite;
-  stroke: var(--color-border-strong);
-  opacity: 0.75;
-  transition: stroke 0.3s, stroke-width 0.3s, opacity 0.3s;
+  stroke: var(--color-border-default);
+  stroke-width: 1.25px;
+  opacity: 0.7;
+  transition: stroke 0.15s, stroke-width 0.15s, opacity 0.15s;
 }
 
+.react-flow__edge:hover .react-flow__edge-path,
 .react-flow__edge.selected .react-flow__edge-path {
-  stroke: var(--color-cobalt);
-  stroke-width: 2px;
+  stroke: var(--color-fg-primary);
+  stroke-width: 1.5px;
   opacity: 1;
-}
-
-@keyframes react-flow-dash {
-  from {
-    stroke-dashoffset: 100;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
 }
 
 .react-flow__controls {

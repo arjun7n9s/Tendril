@@ -18,7 +18,7 @@ export function TopCommandBar({ title, subtitle, primaryAction, meta }: TopComma
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex flex-col gap-3 border-b border-border/40 bg-surface/70 px-6 py-3 backdrop-blur-md",
+        "sticky top-0 z-30 flex flex-col gap-3 border-b border-border bg-surface px-6 py-3",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -34,8 +34,8 @@ export function TopCommandBar({ title, subtitle, primaryAction, meta }: TopComma
           <button
             type="button"
             className={cn(
-              "hidden md:inline-flex h-8 items-center gap-2 rounded-[var(--radius-button)] border border-border/50 bg-surface/50 px-2.5 text-[12px] text-fg-muted transition-all duration-200 ease-out",
-              "hover:bg-raised/80 hover:border-border hover:scale-[1.01] active:scale-[0.99]",
+              "hidden md:inline-flex h-8 items-center gap-2 rounded-[var(--radius-button)] border border-border bg-raised/50 px-2.5 text-[12px] text-fg-muted transition-colors duration-150",
+              "hover:bg-raised hover:text-fg-primary",
             )}
             aria-label="Search (coming soon)"
             aria-disabled
@@ -44,7 +44,7 @@ export function TopCommandBar({ title, subtitle, primaryAction, meta }: TopComma
           >
             <Search className="size-3.5" aria-hidden />
             <span>Search…</span>
-            <kbd className="hidden h-5 items-center rounded border border-[color:var(--color-border-default)] bg-[color:var(--color-canvas)] px-1 text-[10px] font-medium text-[color:var(--color-fg-muted)] xl:inline-flex">
+            <kbd className="hidden h-5 items-center rounded border border-border bg-canvas px-1 text-[10px] font-medium text-fg-muted xl:inline-flex">
               ⌘K
             </kbd>
           </button>

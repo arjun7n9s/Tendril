@@ -12,37 +12,37 @@ const KIND_STYLES: Record<
 > = {
   account: {
     container:
-      "bg-fg-primary/95 text-surface border border-fg-primary/20 shadow-md",
+      "bg-fg-primary text-surface border-fg-primary shadow-flat",
     icon: Building2,
     iconClass: "text-surface",
   },
   signal: {
     container:
-      "bg-cobalt-soft/80 backdrop-blur-md text-cobalt border border-cobalt/25 shadow-glow-cobalt",
+      "bg-surface text-fg-primary border-border hover:border-cobalt/40 shadow-flat",
     icon: Radar,
     iconClass: "text-cobalt",
   },
   evidence: {
     container:
-      "bg-evidence-soft/80 backdrop-blur-md text-evidence border border-evidence/25 shadow-glow-amber",
+      "bg-surface text-fg-primary border-border hover:border-evidence/40 shadow-flat",
     icon: FileSearch,
     iconClass: "text-evidence",
   },
   tech: {
     container:
-      "bg-graph-soft/80 backdrop-blur-md text-graph border border-graph/25",
+      "bg-surface text-fg-primary border-border hover:border-graph/40 shadow-flat",
     icon: Cpu,
     iconClass: "text-graph",
   },
   competitor: {
     container:
-      "bg-risk-soft/80 backdrop-blur-md text-risk border border-risk/25",
+      "bg-surface text-fg-primary border-border hover:border-risk/40 shadow-flat",
     icon: Crosshair,
     iconClass: "text-risk",
   },
   icp: {
     container:
-      "bg-signal-soft/80 backdrop-blur-md text-signal border border-signal/25 shadow-glow-emerald",
+      "bg-surface text-fg-primary border-border hover:border-signal/40 shadow-flat",
     icon: Target,
     iconClass: "text-signal",
   },
@@ -62,9 +62,9 @@ export function TendrilGraphNode({ data }: NodeProps) {
     <Wrapper
       {...wrapperProps}
       className={cn(
-        "flex max-w-[200px] items-start gap-2 rounded-[var(--radius-card)] px-2.5 py-2 transition-all duration-300 ease-out hover:scale-[1.03]",
+        "flex max-w-[200px] items-start gap-2.5 rounded-[var(--radius-card)] px-3 py-2.5 transition-all duration-150 ease-out",
         style.container,
-        node.href ? "hover:shadow-raised hover:-translate-y-0.5" : "",
+        node.href ? "hover:shadow-raised hover:border-border-strong" : "",
       )}
     >
       <Handle type="target" position={Position.Left} className="opacity-0" />

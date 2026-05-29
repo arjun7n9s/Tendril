@@ -58,7 +58,10 @@ from app.services.cache_runner import (
 from app.services.extractor import extract_signals_live
 from app.services.aiml_client import AimlClient, AimlNotConfiguredError
 from app.services.guardrails import check_outreach
-from app.services.memory_service import JsonlMemoryService, MemoryPacket
+from app.services.memory_service import (
+    MemoryPacket,
+    build_memory_service,
+)
 from app.services.mock_fixtures import (
     load_evidence_for,
     load_serp_results,
@@ -250,7 +253,7 @@ def _execute(db: Session, scan: Scan) -> None:
     _commit_phase(db, scan, ScanStatus.graphing, _percent_for_phase(ScanStatus.graphing))
     events.phase_started(ScanStatus.graphing)
 
-    memory = JsonlMemoryService(MEMORY_DIR, event_logger=events)
+    memory = build_memory_service(MEMORY_DIR, event_logger=events)
     written = 0
     for sig in signals:
         packet = MemoryPacket(

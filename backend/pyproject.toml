@@ -41,6 +41,9 @@ dev = [
 # Optional integrations (Phase 8)
 [project.optional-dependencies]
 voice = ["speechmatics-batch>=0.4.0"]
+memory = [
+    "cognee[fastembed]>=1.1.0",
+]
 
 [tool.ruff]
 line-length = 100

@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     database_url: str = Field(default="sqlite:///./signalgraph.db")
     signalgraph_mock_mode: bool = Field(default=True)
     cors_allowed_origins: str = Field(default="http://localhost:3000")
+    # Optional regex for CORS, useful for Vercel preview URLs that
+    # rotate per branch (e.g. `^https://.*\\.vercel\\.app$`). Empty
+    # disables regex matching and only `cors_allowed_origins` applies.
+    cors_allow_origin_regex: str = Field(default="")
+
+    # Memory backend selector. "jsonl" is safest for demos; "cognee" uses
+    # local Cognee storage behind the existing MemoryService protocol.
+    tendril_memory_backend: str = Field(default="jsonl")
 
     # Scan watchdog
     signalgraph_scan_phase_timeout_seconds: int = Field(default=300)
@@ -92,9 +100,10 @@ class Settings(BaseSettings):
         )
 
     def cognee_configured(self) -> bool:
-        # Either hosted (api_key + url) or self-hosted is acceptable.
-        # For MVP, treat as not configured unless an api key is present.
-        return bool(self.cognee_api_key)
+        # Either hosted (api_key + url) or local self-hosted Cognee is acceptable.
+        return (self.tendril_memory_backend or "").lower() == "cognee" or bool(
+            self.cognee_api_key and self.cognee_api_url
+        )
 
     def triggerware_configured(self) -> bool:
         return bool(self.triggerware_api_key)

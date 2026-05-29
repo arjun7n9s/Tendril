@@ -51,7 +51,7 @@ function Inner({ account, signals, brief }: AccountKnowledgeGraphProps) {
     <div
       role="figure"
       aria-label={`Knowledge graph for ${account.name}`}
-      className="rounded-[var(--radius-card)] border border-border/40 bg-surface/40 backdrop-blur-md shadow-flat relative overflow-hidden transition-all duration-300 hover:shadow-raised hover:border-border/60"
+      className="rounded-[var(--radius-card)] border border-border-default bg-surface shadow-flat relative overflow-hidden transition-all duration-200 hover:border-border-strong"
       style={{ height: 540 }}
     >
       <ReactFlow
@@ -83,18 +83,18 @@ function Inner({ account, signals, brief }: AccountKnowledgeGraphProps) {
           variant={BackgroundVariant.Dots}
           gap={18}
           size={1}
-          color="rgba(106, 112, 116, 0.15)"
+          color="var(--color-border-default)"
         />
         <Controls
           position="bottom-right"
           showInteractive={false}
-          className="!rounded-md !border !border-border/40 !bg-surface/80 !backdrop-blur-md !text-fg-secondary !shadow-flat"
+          className="!rounded-md !border !border-border-default !bg-surface !text-fg-secondary !shadow-flat"
         />
         <MiniMap
           pannable
           zoomable
-          className="!rounded-md !border !border-border/40 !bg-surface/80 !backdrop-blur-md !shadow-flat"
-          maskColor="rgba(247, 248, 246, 0.4)"
+          className="!rounded-md !border !border-border-default !bg-surface !shadow-flat"
+          maskColor="rgba(0, 0, 0, 0.05)"
           nodeColor={(node) => {
             const data = node.data as GraphNodeData | undefined;
             switch (data?.kind) {
