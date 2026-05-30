@@ -24,7 +24,7 @@ The launch wedge must stay narrow and reliable:
 > For one target account, find the top public spoken sources, transcribe or reuse them,
 > extract the best GTM signals, and turn those signals into account intelligence.
 
-We should not try to crawl the entire audio web in v1. The first real product version
+We should not try to crawl the entire audio web in v1. The first real product version control syustem here....
 should answer:
 
 - What public conversations has this account appeared in recently?
