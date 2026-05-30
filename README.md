@@ -225,6 +225,54 @@ Tendril is built like a product, not a script:
 
 ---
 
+## 🧩 Built with Kiro — spec-driven, not vibe-coded
+
+Tendril was not improvised. It was **specified, planned, and built with [Kiro](https://kiro.dev)** as the engineering driver — and the evidence lives in the repo, not just in this README. The entire `kiro/` folder is the auditable planning trail the product was built from, and the codebase points back to it.
+
+### A real spec → design → implementation loop
+
+Every layer was locked in a Kiro-authored document *before* code was scaffolded:
+
+| Kiro document | What it drove |
+|---------------|---------------|
+| `kiro-product-blueprint.md` | Product positioning, the three GTM loops, scoring model, partner story |
+| `kiro-backend-requirements-checklist.md` | Every backend decision + dependency locked before scaffolding |
+| `kiro-backend-implementation-phase-plan.md` | The backend split into the exact phases it was built in |
+| `kiro-multimodal-signal-engine-plan.md` | The durable, resumable "it listens" pipeline (CAS dedup, PII, stages) |
+| `kiro-frontend-architecture.md` | Screen-by-screen plan, design language, visual direction |
+| `kiro-frontend-requirements-checklist.md` | Locked frontend decisions (polling cadence, auto-prime, states) |
+| `kiro-external-credentials-usage-guide.md` | How every partner credential is wired into the running system |
+| `kiro-deployment-cognee-setup-plan.md` | Demo-safe deployment + Cognee setup |
+| `quality-hardening-plan.md` · `gap-fixes.md` · `product-analysis-and-ux-review.md` | Iterative hardening, gap closure, and UX review passes |
+
+### The code traces back to the spec
+
+This is the part that proves it's genuine. Source files end with a comment pointing to the exact Kiro section they were derived from, so any decision is auditable in one hop:
+
+```ts
+// frontend/lib/hooks/use-scan.ts
+// Decision sourced from kiro/kiro-frontend-requirements-checklist.md F:
+//   - refetchInterval 1500ms while non-terminal, stop on completed | failed
+
+// frontend/lib/utils/score.ts
+// Discrete thresholds published in kiro/codex-backend-implementation-plan.md
+// and kiro/kiro-backend-requirements-checklist.md (sales-ready: total >= 70)
+
+// frontend/lib/copy.ts
+// Source: kiro/kiro-frontend-architecture.md §23 + kiro-frontend-assets-plan.md §11
+```
+
+### How Kiro shaped the build
+
+- **Phased delivery.** The backend phase plan turned a large surface (scan runner, scoring, briefs, multimodal engine, Cognee memory) into ordered, shippable phases — which is why the pipeline is durable and resumable rather than a monolith.
+- **Decisions before code.** Requirements checklists locked choices (dependencies, polling, scoring thresholds, safety rules) up front, so implementation stayed consistent and the 150+ test suite maps cleanly to documented behavior.
+- **Single source of truth for tone & safety.** UI copy and guardrail rules were centralized per Kiro specs, making it possible to audit the product's voice and its ethical posture in one pass.
+- **An honest audit trail.** Because the planning docs ship next to the code and the code cites them, a reviewer can verify *why* any piece exists — the opposite of a black-box hackathon hack.
+
+> Read `kiro/README.md` for the recommended reading order through the full planning trail.
+
+---
+
 ## 🚀 Quick start
 
 **Backend**
