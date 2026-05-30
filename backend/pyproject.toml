@@ -28,6 +28,9 @@ dependencies = [
     "tldextract>=5.1.3",
     # Browser fallback
     "playwright>=1.48.0",
+    # Multimodal: live audio extraction (yt-dlp + ffmpeg) and Speechmatics ASR
+    "yt-dlp>=2026.3.17",
+    "speechmatics-batch>=0.4.0",
 ]
 
 [dependency-groups]
@@ -40,9 +43,8 @@ dev = [
 
 # Optional integrations (Phase 8)
 [project.optional-dependencies]
-voice = ["speechmatics-batch>=0.4.0"]
 memory = [
-    "cognee[fastembed]>=1.1.0",
+    "cognee>=1.1.0",
 ]
 
 [tool.ruff]

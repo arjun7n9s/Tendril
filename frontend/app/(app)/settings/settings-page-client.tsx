@@ -13,7 +13,6 @@ type Row = {
     HealthResponse,
     | "bright_data_rest"
     | "bright_data_browser"
-    | "bright_data_mcp"
     | "aiml_api"
     | "cognee"
     | "triggerware"
@@ -36,12 +35,6 @@ const ROWS: Row[] = [
     name: "Bright Data Browser API",
     description: "Scraping Browser for JS-heavy pages.",
     docs: "https://docs.brightdata.com/scraping-automation/scraping-browser/introduction",
-  },
-  {
-    key: "bright_data_mcp",
-    name: "Bright Data MCP",
-    description: "Optional MCP server for agentic search and structured extraction.",
-    docs: "https://docs.brightdata.com/ai/mcp-server/tools",
   },
   {
     key: "aiml_api",
@@ -113,7 +106,7 @@ export function SettingsPageClient() {
           </header>
           {isLoading ? (
             <div className="flex flex-col gap-2">
-              {Array.from({ length: 7 }).map((_, idx) => (
+              {Array.from({ length: ROWS.length }).map((_, idx) => (
                 <Skeleton key={idx} className="h-14 rounded-[var(--radius-card)]" />
               ))}
             </div>

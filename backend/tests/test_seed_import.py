@@ -22,8 +22,8 @@ def test_seed_import_creates_accounts_people_and_icp(seed_csv_path: Path) -> Non
     with SessionLocal() as db:
         result = import_seed_csv(db, _read_seed(seed_csv_path))
 
-    assert result.accounts_created >= 5  # 5 targets + customers + champion-current
-    assert result.people_created >= 3
+    assert result.accounts_created >= 20  # 23 targets + 2 customers + champion prev co
+    assert result.people_created >= 1
     assert result.icp_profiles_created == 1
     assert result.warnings == []
 
@@ -32,12 +32,12 @@ def test_seed_import_creates_accounts_people_and_icp(seed_csv_path: Path) -> Non
         assert ramp is not None
         assert ramp.industry == "fintech"
 
-        maya = db.scalar(select(Person).where(Person.email == "maya.chen@example.com"))
-        assert maya is not None
-        assert maya.previous_company is not None
-        assert maya.previous_company.name.lower() == "alpaca"
-        assert maya.current_company is not None
-        assert maya.current_company.domain == "ramp.com"
+        priya = db.scalar(select(Person).where(Person.email == "priya.nair@example.com"))
+        assert priya is not None
+        assert priya.previous_company is not None
+        assert priya.previous_company.name.lower() == "alpaca"
+        assert priya.current_company is not None
+        assert priya.current_company.domain == "ramp.com"
 
         icp = db.scalar(select(ICPProfile).where(ICPProfile.name == "default"))
         assert icp is not None

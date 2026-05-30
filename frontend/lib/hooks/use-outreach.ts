@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { ApiError, outreachApi } from "@/lib/api";
 import { COPY } from "@/lib/copy";
-import type { OutreachPatch } from "@/lib/types";
+import type { OutreachPatch, OutreachTone } from "@/lib/types";
 
 export function usePendingOutreach(allHistory = false) {
   return useQuery({
@@ -68,6 +68,24 @@ export function useEditDraft(draftId: string) {
     },
     onError: (err) => {
       toast.error("Could not save draft", {
+        description: err instanceof ApiError ? err.message : undefined,
+      });
+    },
+  });
+}
+
+export function useRegenerateDraft(draftId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (tone: OutreachTone) =>
+      outreachApi.regenerateOutreachDraft(draftId, { tone }),
+    onSuccess: (data) => {
+      toast.success(COPY.outreach.regeneratedToast);
+      queryClient.setQueryData(["outreach", draftId], data);
+      queryClient.invalidateQueries({ queryKey: ["outreach-pending"] });
+    },
+    onError: (err) => {
+      toast.error("Could not rewrite draft", {
         description: err instanceof ApiError ? err.message : undefined,
       });
     },

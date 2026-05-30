@@ -58,15 +58,78 @@ class MemoryService(Protocol):
 
     def remember(self, packet: MemoryPacket) -> str: ...
 
-    def query(self, question: str, *, limit: int = 5) -> list[MemoryHit]: ...
+    def query(
+        self, question: str, *, limit: int = 5, account_id: str | None = None
+    ) -> list[MemoryHit]: ...
 
     def healthy(self) -> bool: ...
 
 
-class JsonlMemoryService:
-    """Writes packets to `var/memory/scan_<scan_id>.jsonl`.
+# Tokens that carry no retrieval signal; dropped before overlap scoring.
+_STOPWORDS = frozenset(
+    {
+        "the", "a", "an", "and", "or", "but", "of", "to", "in", "on", "for",
+        "with", "at", "by", "from", "as", "is", "are", "was", "were", "be",
+        "been", "it", "its", "this", "that", "these", "those", "what", "which",
+        "who", "whom", "how", "when", "where", "why", "show", "find", "list",
+        "me", "my", "our", "your", "their", "has", "have", "had", "do", "does",
+        "did", "will", "would", "can", "could", "should", "about", "into",
+        "over", "any", "all", "new", "recent", "account", "accounts", "signal",
+        "signals",
+    }
+)
 
-    Optionally emits a `memory_write` scan_event per packet.
+
+def _tokenize(text: str | None) -> set[str]:
+    if not text:
+        return set()
+    out: set[str] = set()
+    token = []
+    for ch in text.lower():
+        if ch.isalnum():
+            token.append(ch)
+        else:
+            if token:
+                word = "".join(token)
+                if len(word) > 2 and word not in _STOPWORDS:
+                    out.add(word)
+                token = []
+    if token:
+        word = "".join(token)
+        if len(word) > 2 and word not in _STOPWORDS:
+            out.add(word)
+    return out
+
+
+def _packet_haystack(record: dict[str, Any]) -> str:
+    parts = [
+        record.get("title"),
+        record.get("body"),
+        record.get("fact"),
+        record.get("inference"),
+        record.get("relationship"),
+    ]
+    meta = record.get("metadata")
+    if isinstance(meta, dict):
+        parts.append(str(meta.get("signal_type")))
+        parts.append(str(meta.get("modality")))
+    return " ".join(p for p in parts if p)
+
+
+class JsonlMemoryService:
+    """File-backed memory with real retrieval.
+
+    Each packet is written twice:
+
+    - `scan_<scan_id>.jsonl` keeps the per-scan trace (unchanged behaviour
+      relied on by the live panel and existing tests).
+    - `account_<account_id>.jsonl` is a durable, append-only rollup that
+      accumulates every web *and* conversation packet for an account across
+      scans. This is what makes memory queryable over time without Cognee.
+
+    `query()` scores rollup packets by keyword overlap with the question plus
+    a small recency bonus, so the brief can be grounded in account history
+    rather than a single run.
     """
 
     def __init__(
@@ -84,10 +147,22 @@ class JsonlMemoryService:
     def _path_for(self, scan_id: str) -> Path:
         return self.base_dir / f"scan_{scan_id}.jsonl"
 
+    def _account_path_for(self, account_id: str) -> Path:
+        return self.base_dir / f"account_{account_id}.jsonl"
+
     def remember(self, packet: MemoryPacket) -> str:
+        record = asdict(packet)
+        line = json.dumps(record, ensure_ascii=False)
+
         path = self._path_for(packet.scan_id)
         with path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(asdict(packet), ensure_ascii=False) + "\n")
+            f.write(line + "\n")
+
+        # Durable cross-scan, cross-modal rollup for retrieval.
+        if packet.account_id:
+            apath = self._account_path_for(packet.account_id)
+            with apath.open("a", encoding="utf-8") as f:
+                f.write(line + "\n")
 
         if self._event_logger is not None:
             event_type = (
@@ -108,12 +183,103 @@ class JsonlMemoryService:
 
         return packet.title
 
-    def query(self, question: str, *, limit: int = 5) -> list[MemoryHit]:
-        # Stub: returns empty list. Cognee implementation replaces this.
-        return []
+    def query(
+        self, question: str, *, limit: int = 5, account_id: str | None = None
+    ) -> list[MemoryHit]:
+        """Return the most relevant stored packets for an account.
+
+        Without an `account_id` there is no rollup to search, so we return
+        an empty list (the previous stub contract).
+        """
+        if not account_id:
+            return []
+        apath = self._account_path_for(account_id)
+        if not apath.exists():
+            return []
+
+        q_tokens = _tokenize(question)
+        records: list[dict[str, Any]] = []
+        for raw in apath.read_text(encoding="utf-8").splitlines():
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                records.append(json.loads(raw))
+            except json.JSONDecodeError:
+                continue
+
+        scored: list[tuple[float, int, MemoryHit]] = []
+        for idx, rec in enumerate(records):
+            haystack = _packet_haystack(rec)
+            p_tokens = _tokenize(haystack)
+            overlap = len(q_tokens & p_tokens) if q_tokens else 0
+            # Recency bonus: later packets (appended later) rank slightly higher
+            # so a tie breaks toward the most recent observation.
+            recency = idx / max(len(records), 1)
+            # When the question is empty/generic, fall back to recency ordering.
+            score = float(overlap) + recency * 0.5
+            if q_tokens and overlap == 0:
+                continue
+            hit = MemoryHit(
+                score=round(score, 4),
+                text=_packet_summary(rec),
+                metadata={
+                    "backend": "jsonl",
+                    "title": rec.get("title"),
+                    "evidence_url": rec.get("evidence_url"),
+                    "observed_at": rec.get("observed_at"),
+                    "written_at": rec.get("written_at"),
+                    "scan_id": rec.get("scan_id"),
+                    "signal_id": rec.get("signal_id"),
+                    "dataset": rec.get("dataset"),
+                    "modality": (rec.get("metadata") or {}).get("modality", "web"),
+                    "signal_type": (rec.get("metadata") or {}).get("signal_type"),
+                },
+            )
+            scored.append((score, idx, hit))
+
+        if q_tokens and not scored:
+            # No keyword overlap with anything: fall back to most-recent packets
+            # so the brief still gets historical context.
+            scored = [
+                (idx / max(len(records), 1), idx, MemoryHit(
+                    score=round(idx / max(len(records), 1), 4),
+                    text=_packet_summary(rec),
+                    metadata={
+                        "backend": "jsonl",
+                        "title": rec.get("title"),
+                        "evidence_url": rec.get("evidence_url"),
+                        "observed_at": rec.get("observed_at"),
+                        "written_at": rec.get("written_at"),
+                        "scan_id": rec.get("scan_id"),
+                        "signal_id": rec.get("signal_id"),
+                        "dataset": rec.get("dataset"),
+                        "modality": (rec.get("metadata") or {}).get("modality", "web"),
+                        "signal_type": (rec.get("metadata") or {}).get("signal_type"),
+                    },
+                ))
+                for idx, rec in enumerate(records)
+            ]
+
+        scored.sort(key=lambda t: (t[0], t[1]), reverse=True)
+        return [hit for _score, _idx, hit in scored[:limit]]
 
     def healthy(self) -> bool:
         return self.base_dir.exists()
+
+
+def _packet_summary(record: dict[str, Any]) -> str:
+    """Compact one-line text for a stored packet used in graph context."""
+    title = (record.get("title") or "").strip()
+    fact = (record.get("fact") or "").strip()
+    inference = (record.get("inference") or "").strip()
+    body = (record.get("body") or "").strip()
+    detail = fact or body
+    parts = [p for p in (title, detail) if p]
+    text = " — ".join(parts) if parts else title
+    if inference:
+        text = f"{text} (inference: {inference})"
+    return text[:400]
 
 
 def _host(url: str | None) -> str | None:
@@ -148,6 +314,13 @@ def build_memory_service(
     log = get_logger("memory")
 
     if backend == "cognee":
+        if not settings.cognee_configured():
+            log.warning("memory.cognee_not_configured_falling_back_to_jsonl")
+            return JsonlMemoryService(
+                base_dir,
+                event_logger=event_logger,
+                replayed=replayed,
+            )
         try:
             from app.services.cognee_memory import (  # type: ignore[import-not-found]
                 CogneeMemoryService,

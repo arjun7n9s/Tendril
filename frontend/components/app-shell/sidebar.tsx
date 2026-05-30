@@ -4,7 +4,6 @@ import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import {
   Activity,
-  CircleAlert,
   LayoutGrid,
   Megaphone,
   Radar,
@@ -162,15 +161,6 @@ export function Sidebar() {
         </div>
       </div>
 
-      <div className="m-3 rounded-[var(--radius-card)] border border-border/40 bg-raised/20 p-3 text-[12px] leading-snug text-fg-muted shadow-flat">
-        <div className="mb-1.5 inline-flex items-center gap-1.5 font-medium text-fg-secondary">
-          <CircleAlert className="size-3.5 text-fg-secondary animate-pulse" aria-hidden />
-          <span>Demo Engine Active</span>
-        </div>
-        <p className="text-[11px] leading-normal text-fg-secondary">
-          Autonomous change tracking. Gated behind secure sandbox credentials.
-        </p>
-      </div>
     </nav>
   );
 }

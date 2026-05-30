@@ -8,7 +8,7 @@ import { StatusChip } from "@/components/primitives/status-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useApproveDraft, useEditDraft, useRejectDraft } from "@/lib/hooks/use-outreach";
+import { useApproveDraft, useEditDraft, useRegenerateDraft, useRejectDraft } from "@/lib/hooks/use-outreach";
 import { EMPHASIS } from "@/lib/motion";
 import type { OutreachRead, OutreachTone } from "@/lib/types";
 import { cn } from "@/lib/utils/cn";
@@ -31,15 +31,50 @@ export function DraftEditor({ draft }: DraftEditorProps) {
   const approve = useApproveDraft(draft.id);
   const reject = useRejectDraft(draft.id);
   const edit = useEditDraft(draft.id);
+  const regenerate = useRegenerateDraft(draft.id);
 
   const [subject, setSubject] = useState(draft.subject);
   const [body, setBody] = useState(draft.body);
   const [tone, setTone] = useState<OutreachTone>(draft.tone);
   const [rejectOpen, setRejectOpen] = useState(false);
 
+  // Keep local editor state in sync when the draft is rewritten server-side
+  // (tone regeneration). We track the last-seen subject/body/tone from the
+  // server so a regenerate result flows into the editor without clobbering
+  // in-progress manual edits on unrelated fields.
+  const lastServer = useRef({
+    subject: draft.subject,
+    body: draft.body,
+    tone: draft.tone,
+  });
+  useEffect(() => {
+    const prev = lastServer.current;
+    if (
+      draft.subject !== prev.subject ||
+      draft.body !== prev.body ||
+      draft.tone !== prev.tone
+    ) {
+      setSubject(draft.subject);
+      setBody(draft.body);
+      setTone(draft.tone);
+      lastServer.current = {
+        subject: draft.subject,
+        body: draft.body,
+        tone: draft.tone,
+      };
+    }
+  }, [draft.subject, draft.body, draft.tone]);
+
   const isDirty = subject !== draft.subject || body !== draft.body || tone !== draft.tone;
 
   const isTerminal = draft.status === "approved" || draft.status === "rejected";
+
+  const handleToneChange = (next: OutreachTone) => {
+    if (next === tone || regenerate.isPending) return;
+    setTone(next);
+    // Rewrite the email body/subject in the new tone (human still approves).
+    regenerate.mutate(next);
+  };
 
   // Pulse the status chip when the draft transitions to a terminal
   // state. Subtle, single-shot, respects reduced motion.
@@ -76,10 +111,8 @@ export function DraftEditor({ draft }: DraftEditorProps) {
         </div>
         <ToneToggle
           value={tone}
-          onChange={(next) => {
-            setTone(next);
-          }}
-          disabled={isTerminal}
+          onChange={handleToneChange}
+          disabled={isTerminal || regenerate.isPending}
         />
       </header>
 
@@ -104,13 +137,18 @@ export function DraftEditor({ draft }: DraftEditorProps) {
           htmlFor="draft-body"
         >
           Body
+          {regenerate.isPending ? (
+            <span className="ml-2 normal-case text-[color:var(--color-fg-muted)]">
+              rewriting in {tone} tone…
+            </span>
+          ) : null}
         </label>
         <Textarea
           id="draft-body"
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          disabled={isTerminal}
-          className="min-h-[280px]"
+          disabled={isTerminal || regenerate.isPending}
+          className={cn("min-h-[280px]", regenerate.isPending && "opacity-60")}
         />
       </div>
 

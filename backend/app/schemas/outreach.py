@@ -36,3 +36,7 @@ class OutreachPatch(BaseModel):
     subject: str | None = None
     body: str | None = None
     tone: OutreachTone | None = None
+
+
+class OutreachRegenerate(BaseModel):
+    tone: OutreachTone = OutreachTone.warm

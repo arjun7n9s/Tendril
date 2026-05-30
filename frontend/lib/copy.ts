@@ -45,6 +45,7 @@ export const COPY = {
     approvedToast: "Draft approved and logged",
     rejectedToast: "Draft rejected",
     editedToast: "Draft updated",
+    regeneratedToast: "Draft rewritten in new tone",
     queueEmpty: "No pending drafts. Run a scan on a target account to generate one.",
   },
   imports: {

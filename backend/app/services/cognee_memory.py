@@ -1,33 +1,49 @@
-"""Cognee-backed MemoryService adapter.
+"""Hosted Cognee Cloud REST adapter for the MemoryService protocol.
 
-Cognee is used as a local knowledge graph/vector memory layer. The scan
-pipeline stays synchronous today, so this adapter contains the async bridge
-and a JSONL fallback. A Cognee outage or config issue should not break a
-demo scan.
+Tendril uses **Cognee Cloud** (the managed tenant configured in `.env`) as its
+graph memory backend. This adapter talks to the tenant's HTTP API directly —
+there is no local Cognee SDK / local graph store involved.
+
+Cloud API (base URL = `COGNEE_API_URL`, auth via `X-Api-Key`):
+- `POST /api/v1/remember`  multipart upload; ingests text and builds the graph.
+- `POST /api/v1/search`    `{query, search_type, datasets}`; graph-grounded recall.
+
+Design decisions:
+- **Account-scoped datasets.** Each account gets its own dataset
+  (`<prefix>_acct_<account_id>`) so recall returns *that account's* accumulated
+  web + conversation memory, not a global blob. This mirrors the JSONL
+  per-account rollup and is what makes the brief's "why now" account-specific.
+- **Write-through to JSONL.** Every packet is also mirrored to the local JSONL
+  rollup. That gives a safety net when the cloud is slow/unavailable, keeps the
+  read-loop's query fallback populated, and provides a replayable local memory
+  for an API-free demo.
+- **Never breaks a scan.** Any cloud error degrades to the local rollup; the
+  pipeline always proceeds.
 """
 
 from __future__ import annotations
 
-import asyncio
+import io
 import json
-import os
-import threading
-from collections.abc import Awaitable
-from dataclasses import asdict
+import re
 from pathlib import Path
 from typing import Any
 
+import httpx
+
 from app.config import get_settings
+from app.logging_setup import get_logger
 from app.models.enums import ScanEventType
 from app.services.memory_service import JsonlMemoryService, MemoryHit, MemoryPacket, _host
 from app.services.scan_events import ScanEventLogger
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-COGNEE_VAR_DIR = PROJECT_ROOT / "backend" / "var" / "cognee"
+log = get_logger("cognee_memory")
+
+_DATASET_SAFE_RE = re.compile(r"[^a-zA-Z0-9_]+")
 
 
 class CogneeMemoryService:
-    """Local Cognee implementation of the MemoryService protocol."""
+    """Cognee Cloud REST implementation of the MemoryService protocol."""
 
     def __init__(
         self,
@@ -36,115 +52,137 @@ class CogneeMemoryService:
         fallback_dir: Path,
         event_logger: ScanEventLogger | None = None,
         replayed: bool = False,
+        client: httpx.Client | None = None,
     ) -> None:
-        _configure_cognee_environment()
-
-        import cognee
-
-        self._cognee = cognee
+        settings = get_settings()
+        self.base_url = (settings.cognee_api_url or "").rstrip("/")
+        self.api_key = settings.cognee_api_key
         self.dataset_prefix = dataset_prefix or "signalgraph"
+        self.search_type = settings.cognee_search_type or "GRAPH_COMPLETION"
+        self.run_in_background = settings.cognee_run_in_background
+        self.timeout = max(1, settings.cognee_operation_timeout_seconds)
         self._event_logger = event_logger
         self._replayed = replayed
-        self._fallback = JsonlMemoryService(
-            fallback_dir / "fallback",
-            event_logger=event_logger,
-            replayed=replayed,
-        )
+        self._owned_client = client is None
+        self._client = client or httpx.Client(timeout=self.timeout, follow_redirects=True)
+        # Silent local mirror (no event logger -> CogneeMemoryService emits the
+        # single memory_write/memory event itself, so we don't double-count).
+        self._fallback = JsonlMemoryService(fallback_dir / "fallback")
+
+    # ---- public protocol ----
 
     def remember(self, packet: MemoryPacket) -> str:
-        settings = get_settings()
-        dataset = packet.dataset or f"{self.dataset_prefix}_signals"
-        try:
-            _run_async(
-                self._cognee.remember(
-                    _packet_to_text(packet),
-                    dataset_name=dataset,
-                    self_improvement=False,
-                    run_in_background=False,
-                ),
-                timeout_seconds=settings.cognee_operation_timeout_seconds,
-            )
-            self._emit_write(packet, dataset)
-            return packet.title
-        except Exception:
-            return self._fallback.remember(packet)
+        # 1) Always mirror locally first (cheap, supports fallback + offline demo).
+        self._fallback.remember(packet)
 
-    def query(self, question: str, *, limit: int = 5) -> list[MemoryHit]:
-        settings = get_settings()
-        dataset = f"{self.dataset_prefix}_signals"
+        # 2) Write-through to Cognee Cloud.
+        dataset = self._dataset_for(packet.account_id)
+        cloud_ok = False
         try:
-            raw_results = _run_async(
-                self._cognee.recall(
-                    question,
-                    datasets=[dataset],
-                    top_k=limit,
-                    only_context=True,
-                ),
-                timeout_seconds=settings.cognee_operation_timeout_seconds,
-            )
-        except Exception:
-            return self._fallback.query(question, limit=limit)
+            self._remember_cloud(packet, dataset)
+            cloud_ok = True
+        except Exception as exc:  # never break a scan on memory
+            log.warning("cognee_memory.remember_failed", error=str(exc)[:200])
 
-        return _coerce_hits(raw_results, limit=limit)
+        self._emit_write(packet, dataset, degraded=not cloud_ok)
+        return packet.title
+
+    def query(
+        self, question: str, *, limit: int = 5, account_id: str | None = None
+    ) -> list[MemoryHit]:
+        dataset = self._dataset_for(account_id)
+        try:
+            hits = self._search_cloud(question, dataset=dataset, limit=limit)
+        except Exception as exc:
+            log.warning("cognee_memory.search_failed", error=str(exc)[:200])
+            hits = []
+
+        if hits:
+            return hits
+        # Cloud returned nothing usable (cold dataset, eventual consistency, or
+        # an error): lean on the local rollup so the brief still has grounding.
+        return self._fallback.query(question, limit=limit, account_id=account_id)
 
     def healthy(self) -> bool:
-        return COGNEE_VAR_DIR.exists()
+        return bool(self.base_url and self.api_key)
 
-    def _emit_write(self, packet: MemoryPacket, dataset: str) -> None:
+    def close(self) -> None:
+        if self._owned_client:
+            self._client.close()
+
+    # ---- cloud calls ----
+
+    def _headers(self) -> dict[str, str]:
+        return {"X-Api-Key": self.api_key}
+
+    def _remember_cloud(self, packet: MemoryPacket, dataset: str) -> None:
+        text = _packet_to_text(packet)
+        files = {
+            "data": (
+                f"{packet.signal_id or 'packet'}.md",
+                io.BytesIO(text.encode("utf-8")),
+                "text/markdown",
+            )
+        }
+        data = {
+            "datasetName": dataset,
+            "run_in_background": "true" if self.run_in_background else "false",
+        }
+        resp = self._client.post(
+            f"{self.base_url}/api/v1/remember",
+            headers=self._headers(),
+            files=files,
+            data=data,
+        )
+        resp.raise_for_status()
+
+    def _search_cloud(
+        self, question: str, *, dataset: str, limit: int
+    ) -> list[MemoryHit]:
+        payload = {
+            "query": question,
+            "search_type": self.search_type,
+            "datasets": [dataset],
+        }
+        resp = self._client.post(
+            f"{self.base_url}/api/v1/search",
+            headers={**self._headers(), "Content-Type": "application/json"},
+            json=payload,
+        )
+        if resp.status_code >= 400:
+            # A cold/absent dataset is a normal "no memory yet" case, not an error.
+            log.info("cognee_memory.search_non_200", status=resp.status_code)
+            return []
+        return _parse_search_response(resp.json(), limit=limit)
+
+    # ---- helpers ----
+
+    def _dataset_for(self, account_id: str | None) -> str:
+        if not account_id:
+            return f"{self.dataset_prefix}_signals"
+        safe = _DATASET_SAFE_RE.sub("_", account_id)
+        return f"{self.dataset_prefix}_acct_{safe}"
+
+    def _emit_write(self, packet: MemoryPacket, dataset: str, *, degraded: bool) -> None:
         if self._event_logger is None:
             return
-
         event_type = (
-            ScanEventType.memory_write_replayed if self._replayed else ScanEventType.memory_write
+            ScanEventType.memory_write_replayed
+            if self._replayed
+            else ScanEventType.memory_write
         )
         self._event_logger.emit(
             event_type,
             f"memory_write: {packet.title}",
             metadata={
-                "backend": "cognee",
+                "backend": "cognee_cloud" if not degraded else "jsonl_fallback",
                 "dataset": dataset,
                 "evidence_host": _host(packet.evidence_url),
                 "signal_id": packet.signal_id,
+                "degraded": degraded,
                 "replayed": self._replayed,
             },
         )
-
-
-def _configure_cognee_environment() -> None:
-    """Set local-first Cognee defaults before importing Cognee."""
-    settings = get_settings()
-    data_dir = COGNEE_VAR_DIR / "data"
-    system_dir = COGNEE_VAR_DIR / "system"
-    cache_dir = COGNEE_VAR_DIR / "cache"
-    logs_dir = COGNEE_VAR_DIR / "logs"
-    for directory in (data_dir, system_dir, cache_dir, logs_dir):
-        directory.mkdir(parents=True, exist_ok=True)
-
-    _set_path_env_default("DATA_ROOT_DIRECTORY", data_dir)
-    _set_path_env_default("SYSTEM_ROOT_DIRECTORY", system_dir)
-    _set_path_env_default("CACHE_ROOT_DIRECTORY", cache_dir)
-    _set_path_env_default("COGNEE_LOGS_DIR", logs_dir)
-    os.environ.setdefault("ENABLE_BACKEND_ACCESS_CONTROL", "false")
-    os.environ.setdefault("CACHING", "false")
-    os.environ.setdefault("EMBEDDING_PROVIDER", "fastembed")
-    os.environ.setdefault("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
-    os.environ.setdefault("EMBEDDING_DIMENSIONS", "384")
-
-    if settings.aiml_api_key:
-        os.environ.setdefault("LLM_PROVIDER", "openai")
-        os.environ.setdefault("LLM_API_KEY", settings.aiml_api_key)
-        os.environ.setdefault("LLM_ENDPOINT", settings.aiml_api_base_url)
-        os.environ.setdefault(
-            "LLM_MODEL",
-            settings.aiml_briefing_model or settings.aiml_extraction_model or "openai/gpt-4o-mini",
-        )
-
-
-def _set_path_env_default(key: str, default_path: Path) -> None:
-    current = os.environ.get(key)
-    if current and Path(current).is_absolute():
-        return
-    os.environ[key] = str(default_path)
 
 
 def _packet_to_text(packet: MemoryPacket) -> str:
@@ -167,63 +205,72 @@ def _packet_to_text(packet: MemoryPacket) -> str:
         fields.append(f"Observed at: {packet.observed_at}")
     if packet.metadata:
         fields.append(f"Metadata: {json.dumps(packet.metadata, sort_keys=True)}")
-    fields.append(f"Envelope: {json.dumps(asdict(packet), default=str, sort_keys=True)}")
     return "\n".join(fields)
 
 
-def _run_async(awaitable: Awaitable[Any], *, timeout_seconds: int) -> Any:
-    timeout = max(1, timeout_seconds)
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(asyncio.wait_for(awaitable, timeout=timeout))
+def _parse_search_response(payload: Any, *, limit: int) -> list[MemoryHit]:
+    """Coerce a Cognee Cloud /search or /recall response into MemoryHits.
 
-    result: dict[str, Any] = {}
-
-    def runner() -> None:
-        try:
-            result["value"] = asyncio.run(awaitable)
-        except BaseException as exc:
-            result["error"] = exc
-
-    thread = threading.Thread(target=runner, daemon=True)
-    thread.start()
-    thread.join(timeout)
-    if thread.is_alive():
-        raise TimeoutError(f"cognee operation exceeded {timeout}s")
-    if "error" in result:
-        raise result["error"]
-    return result.get("value")
-
-
-def _coerce_hits(raw_results: Any, *, limit: int) -> list[MemoryHit]:
-    if raw_results is None:
+    /search returns: [{dataset_id, dataset_name, search_result: [str, ...]}]
+    /recall returns: [{kind, search_type, text, score, dataset_name, ...}]
+    We handle both so the adapter is robust to either endpoint.
+    """
+    if not payload:
         return []
-    if isinstance(raw_results, str):
-        return [MemoryHit(score=1.0, text=raw_results, metadata={"backend": "cognee"})]
-    if isinstance(raw_results, dict):
-        raw_results = raw_results.get("results") or raw_results.get("data") or [raw_results]
-    if not isinstance(raw_results, list):
-        raw_results = list(raw_results) if hasattr(raw_results, "__iter__") else [raw_results]
+    items = payload if isinstance(payload, list) else [payload]
 
     hits: list[MemoryHit] = []
-    for item in raw_results[:limit]:
-        text = _item_text(item)
-        if not text:
+    for item in items:
+        if not isinstance(item, dict):
+            if isinstance(item, str) and item.strip():
+                hits.append(MemoryHit(score=1.0, text=item.strip(), metadata={"backend": "cognee_cloud"}))
             continue
-        metadata = item if isinstance(item, dict) else {}
-        score = float(metadata.get("score", 1.0)) if isinstance(metadata, dict) else 1.0
-        hits.append(MemoryHit(score=score, text=text, metadata={"backend": "cognee", **metadata}))
-    return hits
+
+        dataset_name = item.get("dataset_name")
+
+        # /search shape: search_result is a list of answer strings.
+        results = item.get("search_result")
+        if isinstance(results, list):
+            for r in results:
+                text = _coerce_text(r)
+                if text:
+                    hits.append(
+                        MemoryHit(
+                            score=1.0,
+                            text=text,
+                            metadata={"backend": "cognee_cloud", "dataset_name": dataset_name},
+                        )
+                    )
+            continue
+
+        # /recall shape: a single `text` per item.
+        text = _coerce_text(item.get("text") or item.get("raw"))
+        if text:
+            score = item.get("score")
+            hits.append(
+                MemoryHit(
+                    score=float(score) if isinstance(score, (int, float)) else 1.0,
+                    text=text,
+                    metadata={
+                        "backend": "cognee_cloud",
+                        "dataset_name": dataset_name,
+                        "search_type": item.get("search_type"),
+                    },
+                )
+            )
+
+    return hits[:limit]
 
 
-def _item_text(item: Any) -> str:
-    if isinstance(item, str):
-        return item
-    if isinstance(item, dict):
-        for key in ("text", "content", "context", "chunk", "body"):
-            value = item.get(key)
-            if value:
-                return str(value)
-        return json.dumps(item, default=str, sort_keys=True)
-    return str(item)
+def _coerce_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        for key in ("value", "text", "content", "answer"):
+            v = value.get(key)
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+        return json.dumps(value, sort_keys=True)[:400]
+    return str(value).strip()

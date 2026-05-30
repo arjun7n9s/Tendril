@@ -6,7 +6,6 @@ database before the app modules cache their engine.
 
 from __future__ import annotations
 
-import os
 import shutil
 import tempfile
 from collections.abc import Generator
@@ -21,6 +20,10 @@ def _isolated_db(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]
     db_path = tmpdir / "test.db"
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path.as_posix()}")
     monkeypatch.setenv("SIGNALGRAPH_MOCK_MODE", "true")
+    # Hermetic memory: never touch hosted Cognee from the default test path,
+    # even if the developer's .env points TENDRIL_MEMORY_BACKEND at cognee.
+    # The Cognee adapter tests opt back in explicitly with mocked HTTP.
+    monkeypatch.setenv("TENDRIL_MEMORY_BACKEND", "jsonl")
 
     # Reset cached singletons so the new DATABASE_URL is picked up.
     from app.config import get_settings

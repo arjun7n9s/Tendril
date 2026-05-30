@@ -55,7 +55,36 @@ def _format_evidence(signals: list[Signal]) -> list[dict]:
     ]
 
 
-def generate_brief(account: Account, signals: list[Signal], score: Score) -> BriefDraft:
+def _memory_grounding_line(graph_context: str) -> str:
+    """Pick the most useful single line from a graph_context block.
+
+    Works for both memory backends:
+    - JSONL recall emits a "Recurring themes over time: ..." line first.
+    - Cognee GRAPH_COMPLETION emits a synthesized answer as the first bullet
+      under "Prior account memory:".
+
+    Returns an empty string when there's nothing to surface.
+    """
+    if not graph_context or graph_context in ("", "(empty)"):
+        return ""
+    lines = [ln.strip() for ln in graph_context.splitlines() if ln.strip()]
+    # Prefer an explicit recurring-themes summary if present.
+    for ln in lines:
+        if ln.lower().startswith("recurring themes"):
+            return ln
+    # Otherwise take the first recalled memory bullet.
+    for ln in lines:
+        if ln.startswith("- "):
+            return ln[2:].strip()
+    return ""
+
+
+def generate_brief(
+    account: Account,
+    signals: list[Signal],
+    score: Score,
+    graph_context: str = "",
+) -> BriefDraft:
     top_signals = sorted(signals, key=lambda s: s.confidence, reverse=True)[:5]
     evidence = _format_evidence(top_signals)
 
@@ -78,6 +107,12 @@ def generate_brief(account: Account, signals: list[Signal], score: Score) -> Bri
         )
         else "No urgent timing trigger; treat as a warm research thread."
     )
+    # Ground "why now" in accumulated account memory when the graph recall
+    # surfaced prior context. This is the read side of the memory loop made
+    # visible in the deterministic brief too, so mock demos show Cognee's value.
+    memory_line = _memory_grounding_line(graph_context)
+    if memory_line:
+        why_now = f"{why_now} Account memory: {memory_line}"
 
     risks: list[str] = []
     if score.evidence_score < 10:
@@ -107,31 +142,92 @@ def generate_brief(account: Account, signals: list[Signal], score: Score) -> Bri
 
 
 def generate_outreach(
-    account: Account, brief: BriefDraft, top_signal: Signal | None
+    account: Account,
+    brief: BriefDraft,
+    top_signal: Signal | None,
+    tone: str = "warm",
 ) -> OutreachDraftPayload:
-    subject = f"Quick note on {account.name}'s data platform work"
+    tone = (tone or "warm").lower()
+    spec = _TONE_SPECS.get(tone, _TONE_SPECS["warm"])
+
+    subject = spec["subject"](account)
     lines: list[str] = []
-    lines.append(f"Hi there,")
+    lines.append(spec["greeting"])
     lines.append("")
-    lines.append(
-        f"Reading {account.name}'s recent public engineering content, it looks like the team "
-        "is investing in data platform reliability and modernization."
-    )
+    lines.append(spec["opener"](account))
     if top_signal is not None:
         lines.append("")
         lines.append(
-            f"One thread that stood out: {top_signal.title}. "
+            f"{spec['signal_lead']} {top_signal.title}. "
             f"Reference: {top_signal.evidence_url}"
         )
     lines.append("")
-    lines.append(
-        "If it would be useful, I am happy to share a short reliability migration checklist "
-        "we put together with comparable fintech data teams."
-    )
+    lines.append(spec["offer"])
     lines.append("")
-    lines.append("No pressure - happy to send it over and stay out of your way otherwise.")
+    lines.append(spec["closer"])
     body = "\n".join(lines)
-    return OutreachDraftPayload(subject=subject, body=body, tone="warm")
+    return OutreachDraftPayload(subject=subject, body=body, tone=tone)
+
+
+# Deterministic tone presets so the tone toggle changes the draft even
+# without a live model (mock mode / AIML down). Each preset shifts the
+# subject line, greeting, framing, offer, and sign-off register while
+# staying inside the same ethical guardrails (no false familiarity,
+# account-level only, low-pressure offer).
+_TONE_SPECS: dict[str, dict] = {
+    "warm": {
+        "subject": lambda a: f"Quick note on {a.name}'s data platform work",
+        "greeting": "Hi there,",
+        "opener": lambda a: (
+            f"Reading {a.name}'s recent public engineering content, it looks like the team "
+            "is investing in data platform reliability and modernization."
+        ),
+        "signal_lead": "One thread that stood out:",
+        "offer": (
+            "If it would be useful, I'm happy to share a short reliability migration "
+            "checklist we put together with comparable fintech data teams."
+        ),
+        "closer": "No pressure - happy to send it over and stay out of your way otherwise.",
+    },
+    "technical": {
+        "subject": lambda a: f"{a.name}'s data platform reliability + migration patterns",
+        "greeting": "Hi team,",
+        "opener": lambda a: (
+            f"Your recent public engineering work suggests {a.name} is hardening its data "
+            "platform - reliability, pipeline observability, and migration tradeoffs."
+        ),
+        "signal_lead": "The detail that caught my eye:",
+        "offer": (
+            "If helpful, I can share a technical teardown of how similar teams handled "
+            "schema migration, backfills, and SLA monitoring without downtime."
+        ),
+        "closer": "Happy to go deep on the architecture or stay async - your call.",
+    },
+    "executive": {
+        "subject": lambda a: f"Accelerating {a.name}'s data platform initiative",
+        "greeting": "Hello,",
+        "opener": lambda a: (
+            f"It looks like {a.name} is making a strategic investment in its data platform, "
+            "which usually maps to faster product velocity and lower operational risk."
+        ),
+        "signal_lead": "What signaled this to us:",
+        "offer": (
+            "If it's useful, I can share how comparable teams measured ROI and de-risked "
+            "the rollout at the leadership level."
+        ),
+        "closer": "Happy to find 15 minutes whenever the timing works.",
+    },
+    "concise": {
+        "subject": lambda a: f"{a.name} data platform - quick idea",
+        "greeting": "Hi,",
+        "opener": lambda a: (
+            f"Noticed {a.name} is investing in data platform reliability."
+        ),
+        "signal_lead": "Specifically:",
+        "offer": "Want a short migration checklist from similar fintech teams?",
+        "closer": "No pressure either way.",
+    },
+}
 
 
 # ---------------- Live (AIML) helpers ----------------
@@ -264,12 +360,14 @@ async def generate_outreach_live(
     account: Account,
     signals: list[Signal],
     top_signal: Signal | None,
+    tone: str = "warm",
 ) -> tuple[OutreachDraftPayload, dict]:
     """Call AIML to draft outreach, falling back on bad output.
 
     Final guardrails (`guardrails.check_outreach`) run on the result by the
     caller, never inside this function.
     """
+    tone = (tone or "warm").lower()
     fallback_brief = generate_brief(
         account,
         signals,
@@ -282,7 +380,7 @@ async def generate_outreach_live(
             sales_ready=True,
         ),
     )
-    fallback_outreach = generate_outreach(account, fallback_brief, top_signal)
+    fallback_outreach = generate_outreach(account, fallback_brief, top_signal, tone)
 
     system_prompt = load_prompt("generate_outreach.system.md")
     other_signals_block = "\n".join(
@@ -294,6 +392,8 @@ async def generate_outreach_live(
         "generate_outreach.user.md",
         account_name=account.name,
         account_industry=account.industry or "",
+        tone=tone,
+        tone_guidance=_TONE_GUIDANCE.get(tone, _TONE_GUIDANCE["warm"]),
         top_signal_type=as_str(top_signal.signal_type) if top_signal else "other",
         top_signal_title=(top_signal.title if top_signal else "Public web evidence"),
         top_signal_fact=(top_signal.fact_text or "" if top_signal else ""),
@@ -318,9 +418,33 @@ async def generate_outreach_live(
         return fallback_outreach, {"model": meta.model, "duration_ms": meta.duration_ms, "fallback": True}
 
     return (
-        OutreachDraftPayload(subject=subject[:512], body=body[:2000], tone="warm"),
+        OutreachDraftPayload(subject=subject[:512], body=body[:2000], tone=tone),
         {"model": meta.model, "duration_ms": meta.duration_ms, "fallback": False},
     )
+
+
+# Per-tone guidance injected into the live outreach prompt. Mirrors the
+# deterministic presets so live and mock drafts shift register consistently.
+_TONE_GUIDANCE: dict[str, str] = {
+    "warm": (
+        "Tone: WARM. Friendly and human, lightly enthusiastic but never pushy. "
+        "Conversational greeting, a genuine low-pressure offer to help."
+    ),
+    "technical": (
+        "Tone: TECHNICAL. Speak engineer-to-engineer. Reference concrete systems "
+        "and tradeoffs (pipelines, schema migration, observability, SLAs). Precise, "
+        "no fluff, credible. Offer a technical resource, not a sales call."
+    ),
+    "executive": (
+        "Tone: EXECUTIVE. Concise and outcome-oriented. Frame around business impact "
+        "(velocity, risk, ROI), not implementation detail. Respect their time; offer a "
+        "brief, senior-level conversation."
+    ),
+    "concise": (
+        "Tone: CONCISE. Maximum brevity. 3-4 short sentences total. One observation, "
+        "one offer, one low-pressure close. No preamble."
+    ),
+}
 
 
 @dataclass

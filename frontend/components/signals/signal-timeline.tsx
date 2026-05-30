@@ -1,10 +1,11 @@
 "use client";
 
-import { format, getISOWeek, getYear, parseISO } from "date-fns";
+import { format, getISOWeek, getYear } from "date-fns";
 import { useMemo } from "react";
 
 import { SignalCard } from "@/components/signals/signal-card";
 import type { SignalRead } from "@/lib/types";
+import { parseBackendDate } from "@/lib/utils/dates";
 
 type Bucket = {
   key: string;
@@ -21,7 +22,7 @@ function bucketLabel(date: Date): string {
 function safeParse(value: string | null | undefined): Date | null {
   if (!value) return null;
   try {
-    const d = parseISO(value);
+    const d = parseBackendDate(value);
     return Number.isNaN(d.getTime()) ? null : d;
   } catch {
     return null;

@@ -62,6 +62,7 @@ from app.services.memory_service import (
     MemoryPacket,
     build_memory_service,
 )
+from app.services.memory_retrieval import recall_account_memory
 from app.services.mock_fixtures import (
     load_evidence_for,
     load_serp_results,
@@ -271,10 +272,35 @@ def _execute(db: Session, scan: Scan) -> None:
             metadata={
                 "signal_type": as_str(sig.signal_type),
                 "confidence": sig.confidence,
+                "modality": "web",
             },
         )
         memory.remember(packet)
         written += 1
+    db.commit()
+
+    # ---- Read loop: recall accumulated account memory to ground the brief.
+    # This closes the graph loop — memory is written above and read back here
+    # so the brief reasons over change-over-time, not just this run.
+    graph_recall = recall_account_memory(
+        memory,
+        account_id=account.id,
+        account_name=account.name,
+        current_signal_titles=[s.title for s in signals],
+        current_scan_id=scan.id,
+    )
+    events.memory_read(
+        message=(
+            f"recalled {graph_recall.total} memory packets "
+            f"({graph_recall.prior_count} from prior scans)"
+        ),
+        phase=ScanStatus.graphing,
+        recalled=graph_recall.total,
+        prior=graph_recall.prior_count,
+        recurring_themes=graph_recall.recurring_themes or None,
+        modalities=graph_recall.modalities or None,
+        backend=settings.tendril_memory_backend,
+    )
     db.commit()
     events.phase_completed(ScanStatus.graphing, memory_writes=written)
     db.commit()
@@ -331,10 +357,10 @@ def _execute(db: Session, scan: Scan) -> None:
 
     if scan.mode == ScanMode.live:
         brief, brief_telemetry = asyncio.run(
-            _live_brief(account, signals, score_row, events)
+            _live_brief(account, signals, score_row, events, graph_recall.context_text)
         )
     else:
-        brief = generate_brief(account, signals, score_row)
+        brief = generate_brief(account, signals, score_row, graph_recall.context_text)
         brief_telemetry = {"model": "mock", "duration_ms": 0, "fallback": False}
 
     brief_row = Brief(
@@ -746,6 +772,7 @@ async def _live_brief(
     signals: list[Signal],
     score_row: Score,
     events: ScanEventLogger,
+    graph_context: str = "",
 ) -> tuple[BriefDraft, dict]:
     """Generate brief via AIML; fall back to deterministic on misconfig."""
     try:
@@ -755,11 +782,11 @@ async def _live_brief(
                 account=account,
                 signals=signals,
                 score=score_row,
-                graph_context="",
+                graph_context=graph_context,
             )
     except AimlNotConfiguredError:
         events.warning("AIML not configured; using deterministic brief")
-        return generate_brief(account, signals, score_row), {
+        return generate_brief(account, signals, score_row, graph_context), {
             "model": "fallback",
             "duration_ms": 0,
             "fallback": True,

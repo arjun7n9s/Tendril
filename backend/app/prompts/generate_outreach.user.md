@@ -1,6 +1,9 @@
 Account: {account_name}
 Industry: {account_industry}
 
+Requested tone: {tone}
+{tone_guidance}
+
 Top signal:
   type: {top_signal_type}
   title: {top_signal_title}
@@ -10,4 +13,5 @@ Top signal:
 Other supporting signals:
 {other_signals}
 
-Compose a warm, evidence-backed outreach in JSON per the system rules.
+Compose an evidence-backed outreach email in the requested tone, as JSON per
+the system rules.

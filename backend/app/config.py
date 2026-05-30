@@ -98,13 +98,21 @@ class Settings(BaseSettings):
     # Mode used for scheduled scans: "mock" (safe default) or "live".
     watchtower_default_mode: str = Field(default="mock")
 
-    # Cognee
+    # Cognee (hosted Cognee Cloud REST API)
     cognee_api_key: str = Field(default="")
     cognee_api_url: str = Field(default="")
     cognee_tenant_id: str = Field(default="")
     cognee_user_id: str = Field(default="")
     cognee_dataset_prefix: str = Field(default="signalgraph")
-    cognee_operation_timeout_seconds: int = Field(default=20)
+    cognee_operation_timeout_seconds: int = Field(default=30)
+    # remember() builds the graph server-side; run it in the background so a
+    # scan's graphing phase stays fast. The read loop recalls *prior* scans'
+    # accumulated memory, so the current run's writes don't need to be
+    # immediately queryable.
+    cognee_run_in_background: bool = Field(default=True)
+    # Search strategy for recall. GRAPH_COMPLETION returns an LLM-synthesized
+    # answer grounded in the account's graph — ideal for brief "why now".
+    cognee_search_type: str = Field(default="GRAPH_COMPLETION")
 
     # Optional integrations
     triggerware_api_key: str = Field(default="")

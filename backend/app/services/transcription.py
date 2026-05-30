@@ -196,67 +196,138 @@ def _speechmatics_transcribe(
     Uses the optional `speechmatics-batch` SDK (declared under the `voice`
     extra). Raises on failure so the caller can mark the stage resumable.
     """
-    from speechmatics_batch import BatchClient  # type: ignore[import-not-found]
-    from speechmatics_batch.models import (  # type: ignore[import-not-found]
-        ConnectionSettings,
+    from speechmatics.batch import (  # type: ignore[import-not-found]
+        AsyncClient,
+        FormatType,
         TranscriptionConfig,
     )
 
     settings = get_settings()
-    conn = ConnectionSettings(
-        url="https://asr.api.speechmatics.com/v2",
-        auth_token=settings.speechmatics_api_key,
+
+    import asyncio
+
+    from app.services.audio_extractor import (
+        AudioExtractionError,
+        extract_audio,
+        looks_extractable,
     )
+
+    if not looks_extractable(source.source_url):
+        raise AudioExtractionError(f"not_extractable_url:{source.source_url[:80]}")
+
+    events.speechmatics_call(
+        "extracting audio for transcription",
+        stage=MediaScanStage.transcribe,
+    )
+    audio = extract_audio(source.source_url)
+
+    # True content-addressable dedup: re-key the asset on the real audio bytes.
+    existing_by_hash = (
+        db.query(MediaAsset)
+        .filter(
+            MediaAsset.media_hash == audio.media_hash,
+            MediaAsset.id != asset.id,
+            MediaAsset.transcript_id.isnot(None),
+        )
+        .first()
+    )
+    if existing_by_hash is not None and existing_by_hash.transcript_id:
+        existing_tr = db.get(Transcript, existing_by_hash.transcript_id)
+        if existing_tr is not None:
+            events.cache_hit(
+                "content match on audio hash; reusing transcript (no ASR cost)",
+                stage=MediaScanStage.transcribe,
+                media_hash_prefix=audio.media_hash[:12],
+            )
+            asset.media_hash = audio.media_hash
+            asset.transcript_id = existing_tr.id
+            asset.duration_seconds = audio.duration_seconds or asset.duration_seconds
+            db.add(asset)
+            db.flush()
+            return existing_tr.segments_json or [], existing_tr.confidence, existing_tr.language
+
+    asset.media_hash = audio.media_hash
+    if audio.duration_seconds:
+        asset.duration_seconds = audio.duration_seconds
+    asset.transcription_status = TranscriptionStatus.in_progress
+    db.add(asset)
+    db.commit()
+
     config = TranscriptionConfig(
         language="en",
-        diarization="speaker",
         operating_point="enhanced",
+        diarization="speaker",
     )
-    with BatchClient(conn) as client:
-        job_id = asset.speechmatics_job_id
-        if job_id:
-            # Resume: a job was already submitted for this asset. Poll it
-            # rather than resubmitting (prevents double-billing on crash).
-            events.speechmatics_call(
-                "resuming existing batch job (no resubmit)",
-                stage=MediaScanStage.transcribe,
-                job_id=job_id,
-            )
-        else:
-            job_id = client.submit_job(audio=source.source_url, transcription_config=config)
-            # Persist the job id BEFORE waiting, and commit immediately so a
-            # crash during the wait leaves a recoverable pointer.
-            asset.speechmatics_job_id = job_id
-            asset.transcription_status = TranscriptionStatus.in_progress
-            db.add(asset)
-            db.commit()
+
+    async def _job() -> tuple[list[dict], float | None]:
+        async with AsyncClient(api_key=settings.speechmatics_api_key) as client:
+            job = await client.submit_job(audio.file_path, transcription_config=config)
+            job_id = getattr(job, "id", None) or getattr(job, "job_id", None) or str(job)
             events.speechmatics_call(
                 "submitted batch job",
                 stage=MediaScanStage.transcribe,
                 job_id=job_id,
             )
-        transcript = client.wait_for_completion(job_id, transcription_format="json-v2")
+            poll_timeout = float(
+                max(
+                    120,
+                    settings.speechmatics_poll_seconds
+                    * settings.speechmatics_max_poll_attempts,
+                )
+            )
+            transcript = await client.wait_for_completion(
+                job_id,
+                format_type=FormatType.JSON,
+                polling_interval=5.0,
+                timeout=poll_timeout,
+            )
+        segs = _segments_from_transcript(transcript)
+        conf = getattr(transcript, "confidence", None)
+        return segs, (float(conf) if isinstance(conf, (int, float)) else None)
 
+    segments, confidence = asyncio.run(_job())
+    return segments, confidence, "en"
+
+
+def _segments_from_transcript(transcript: object) -> list[dict]:
+    """Group Speechmatics word-level results into coarse speaker segments.
+
+    `transcript.results` is a list of RecognitionResult objects with `.type`,
+    `.start_time`, `.end_time`, and `.alternatives[0]` carrying `.content`,
+    `.confidence`, `.speaker`.
+    """
+    results = getattr(transcript, "results", None) or []
     segments: list[dict] = []
-    results = transcript.get("results", []) if isinstance(transcript, dict) else []
-    # Group word-level results into coarse speaker segments.
     current: dict | None = None
+
     for r in results:
-        if r.get("type") != "word":
+        r_type = getattr(r, "type", None)
+        if r_type not in ("word", "punctuation"):
             continue
-        alt = (r.get("alternatives") or [{}])[0]
-        speaker = alt.get("speaker", "Speaker")
-        word = alt.get("content", "")
-        start = r.get("start_time", 0.0)
-        end = r.get("end_time", 0.0)
+        alts = getattr(r, "alternatives", None) or []
+        if not alts:
+            continue
+        alt = alts[0]
+        content = getattr(alt, "content", "") or ""
+        speaker = getattr(alt, "speaker", None) or "S1"
+        start = getattr(r, "start_time", 0.0) or 0.0
+        end = getattr(r, "end_time", start) or start
+
+        is_punct = r_type == "punctuation"
         if current is None or current["speaker"] != speaker:
             if current is not None:
                 segments.append(current)
-            current = {"start": start, "end": end, "speaker": speaker, "text": word}
+            current = {
+                "start": round(float(start), 2),
+                "end": round(float(end), 2),
+                "speaker": speaker,
+                "text": content,
+            }
         else:
-            current["text"] += f" {word}"
-            current["end"] = end
+            sep = "" if is_punct else " "
+            current["text"] = f"{current['text']}{sep}{content}".strip()
+            current["end"] = round(float(end), 2)
+
     if current is not None:
         segments.append(current)
-
-    return segments, None, "en"
+    return segments

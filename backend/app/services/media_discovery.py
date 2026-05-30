@@ -37,24 +37,26 @@ def build_media_queries(account: Account, icp: ICPProfile | None) -> list[MediaD
     tech = ", ".join((icp.tech_keywords_json or [])[:3]) if icp else ""
     queries = [
         MediaDiscoveryQuery(
-            text=f"{name} engineering podcast {tech}".strip(),
+            # site:youtube.com/watch biases SERP toward *individual videos*
+            # (reliably audio-extractable) rather than channels or playlists.
+            text=f"site:youtube.com/watch {name} engineering {tech}".strip(),
+            purpose="youtube_engineering",
+            source_type=MediaSourceType.youtube,
+        ),
+        MediaDiscoveryQuery(
+            text=f"site:youtube.com/watch {name} podcast interview data".strip(),
             purpose="youtube_podcast",
             source_type=MediaSourceType.youtube,
         ),
         MediaDiscoveryQuery(
-            text=f"{name} earnings call transcript",
-            purpose="earnings_call",
-            source_type=MediaSourceType.earnings_call,
-        ),
-        MediaDiscoveryQuery(
-            text=f"{name} webinar reliability data platform",
-            purpose="webinar",
-            source_type=MediaSourceType.webinar,
-        ),
-        MediaDiscoveryQuery(
-            text=f"{name} conference keynote",
-            purpose="conference",
+            text=f"site:youtube.com/watch {name} conference talk keynote".strip(),
+            purpose="youtube_conference",
             source_type=MediaSourceType.conference,
+        ),
+        MediaDiscoveryQuery(
+            text=f"{name} engineering podcast episode {tech}".strip(),
+            purpose="podcast_episode",
+            source_type=MediaSourceType.podcast,
         ),
     ]
     return queries
@@ -182,20 +184,36 @@ async def discover_sources_live(
 
 
 _MEDIA_HOST_MARKERS = (
-    "youtube.com",
-    "youtu.be",
-    "podcasts.",
-    "podcast",
-    "spotify.com",
-    "soundcloud",
-    "vimeo.com",
-    "earnings",
-    "investor",
-    "webinar",
-    "/watch",
+    "youtube.com/watch",
+    "youtu.be/",
+    "podcasts.apple.com",
+    "soundcloud.com/",
+    "vimeo.com/",
+    ".mp3",
+    ".m4a",
+    "buzzsprout.com",
+    "libsyn.com",
+    "simplecast.com",
+    "megaphone.fm",
+    "transistor.fm",
+    "/episode",
+)
+
+# Reject these even if a marker matches: channels, playlists, and text-only
+# transcript pages aren't single audio items we can extract + transcribe.
+_MEDIA_REJECT_MARKERS = (
+    "youtube.com/@",
+    "youtube.com/channel",
+    "youtube.com/c/",
+    "youtube.com/playlist",
+    "/earnings/transcripts",
+    "earnings-transcript",
+    "call-transcripts",
 )
 
 
 def _looks_like_media(url: str) -> bool:
     lower = url.lower()
+    if any(bad in lower for bad in _MEDIA_REJECT_MARKERS):
+        return False
     return any(marker in lower for marker in _MEDIA_HOST_MARKERS)

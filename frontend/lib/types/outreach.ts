@@ -40,3 +40,7 @@ export type OutreachPatch = {
   body?: string;
   tone?: OutreachTone;
 };
+
+export type OutreachRegenerate = {
+  tone: OutreachTone;
+};

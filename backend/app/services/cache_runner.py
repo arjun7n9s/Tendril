@@ -44,6 +44,7 @@ from app.services.memory_service import (
     MemoryPacket,
     build_memory_service,
 )
+from app.services.memory_retrieval import recall_account_memory
 from app.services.scan_events import ScanEventLogger
 
 log = get_logger("cache_runner")
@@ -285,11 +286,35 @@ def replay_blessed_run(db: Session, scan: Scan) -> bool:
                         else str(sig.signal_type)
                     ),
                     "confidence": sig.confidence,
+                    "modality": "web",
                     "replayed": True,
                 },
             )
         )
         written += 1
+    db.commit()
+
+    # Read loop (replayed): recall accumulated memory so the cached trace
+    # mirrors a live scan's graph read, then emit the memory_read event.
+    graph_recall = recall_account_memory(
+        memory,
+        account_id=account.id,
+        account_name=account.name,
+        current_signal_titles=[s.title for s in signal_objs],
+        current_scan_id=scan.id,
+    )
+    events.memory_read(
+        message=(
+            f"recalled {graph_recall.total} memory packets "
+            f"({graph_recall.prior_count} from prior scans)"
+        ),
+        phase=ScanStatus.graphing,
+        recalled=graph_recall.total,
+        prior=graph_recall.prior_count,
+        recurring_themes=graph_recall.recurring_themes or None,
+        modalities=graph_recall.modalities or None,
+        replayed=True,
+    )
     db.commit()
     events.phase_completed(ScanStatus.graphing, memory_writes=written)
     db.commit()

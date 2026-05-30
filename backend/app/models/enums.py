@@ -109,6 +109,7 @@ class ScanEventType(str, Enum):
     aiml_call_replayed = "aiml_call_replayed"
     memory_write = "memory_write"
     memory_write_replayed = "memory_write_replayed"
+    memory_read = "memory_read"
     warning = "warning"
     error = "error"
     info = "info"

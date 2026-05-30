@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils/cn";
 
 type IntegrationKey = keyof Pick<
   HealthResponse,
-  "bright_data_rest" | "bright_data_browser" | "bright_data_mcp" | "aiml_api" | "cognee"
+  "bright_data_rest" | "bright_data_browser" | "aiml_api" | "cognee"
 >;
 
 const INTEGRATIONS: { key: IntegrationKey; label: string; description: string }[] = [
@@ -17,7 +17,6 @@ const INTEGRATIONS: { key: IntegrationKey; label: string; description: string }[
     label: "Browser API",
     description: "Bright Data Scraping Browser for JS-heavy pages",
   },
-  { key: "bright_data_mcp", label: "MCP", description: "Bright Data MCP server (optional)" },
   { key: "aiml_api", label: "AI/ML API", description: "Extraction, briefing, draft models" },
   { key: "cognee", label: "Cognee", description: "Persistent graph memory" },
 ];

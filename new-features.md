@@ -1,4 +1,490 @@
-# Tendril Multimodal Signal Discovery Engine
+# Tendril Product Expansion Blueprint
+
+## Product Direction
+
+Tendril should evolve from a scan-and-table tool into an operator-grade GTM workspace.
+
+The product should answer two questions every time a rep opens it:
+
+- What changed in my market, accounts, and pipeline?
+- What should I do next?
+
+Two product pillars move Tendril in that direction:
+
+1. **Tendril Home: GTM Operator Cockpit**  
+   A judgment-first home screen with an LLM command center, daily priorities,
+   signal stream, watchtower alerts, and suggested actions.
+
+2. **Multimodal Signal Discovery Engine**  
+   A backend intelligence layer that reads the public web and listens to public
+   conversations: podcasts, earnings calls, webinars, conference talks, YouTube
+   sessions, and panels.
+
+The key product shift:
+
+> Tendril should not open as a database. It should open as a decision layer.
+
+---
+
+# Pillar 1: Tendril Home
+
+## Product Thesis
+
+Going directly into the Accounts page makes Tendril feel like a CRM table. That is
+useful, but it is not the strongest first impression.
+
+The first screen should make the user feel:
+
+- Tendril understands their accounts.
+- Tendril knows what changed.
+- Tendril can explain why it matters.
+- Tendril can guide the next action.
+
+This page is not a marketing landing page. It is the working home for the product:
+
+> A GTM Operator Cockpit that turns account intelligence into daily judgment.
+
+## Design Principle
+
+Open with judgment, not inventory.
+
+The Accounts page should remain the database view. The Home page should be the
+intelligence view.
+
+Accounts page:
+
+- browse all accounts
+- filter by score, status, industry, signal type
+- inspect one account deeply
+
+Home page:
+
+- summarize what changed
+- prioritize what matters
+- let the user ask questions
+- suggest actions
+- route the user into the right workflow
+
+## First Screen Narrative
+
+The ideal first screen should feel like:
+
+> Good morning. 7 accounts changed while you were away.
+
+Then immediately give the user a command box:
+
+> Ask Tendril what changed, who to contact, or where to scan next.
+
+The page should not explain features. It should perform useful work.
+
+## Core Layout
+
+### 1. Context-Aware Command Center
+
+The command center is the primary object on the page.
+
+It should be a large, calm input area that understands the current workspace:
+
+- accounts
+- account scores
+- web scan results
+- media scan results
+- watchtower alerts
+- outreach drafts
+- Cognee memory
+- recent changes
+- provider health
+
+Example prompts:
+
+- Which accounts became sales-ready this week?
+- What changed since my last scan?
+- Which accounts need outreach today?
+- Show accounts with new migration or vendor-evaluation signals.
+- Find accounts with weak evidence but high potential.
+- Scan Stripe for spoken signals from podcasts and webinars.
+- Summarize Acme's newest evidence into a sales brief.
+- Which outreach drafts are ready for approval?
+
+The response should not be a generic chatbot answer. It should return structured,
+actionable output:
+
+- account references
+- evidence links
+- confidence levels
+- recommended next actions
+- buttons to open account, run scan, review evidence, or draft outreach
+
+### 2. Today's Priority Accounts
+
+A focused list of accounts that require action now.
+
+Priority reasons:
+
+- score crossed the sales-ready threshold
+- high-confidence signal appeared
+- new stakeholder or champion was detected
+- account has a material score jump
+- competitor/vendor mention appeared
+- recent media source produced useful evidence
+- outreach draft is ready
+- previous scan failed or needs attention
+
+Each item should show:
+
+- account name
+- score and score delta
+- reason for prioritization
+- strongest evidence snippet
+- recommended action
+
+Example:
+
+> Acme +14  
+> New CTO podcast mention confirms Kafka migration timeline.  
+> Action: review evidence and generate outreach.
+
+### 3. Multimodal Signal Stream
+
+A chronological feed of meaningful changes across the workspace.
+
+Signal types:
+
+- web article
+- job post
+- funding event
+- product launch
+- leadership change
+- podcast
+- YouTube talk
+- webinar
+- earnings call
+- conference panel
+- competitor/vendor mention
+
+Each signal should include:
+
+- source type
+- account
+- short summary
+- confidence
+- timestamp or source date
+- evidence link
+- privacy status where relevant
+
+This stream is not a raw log. It should be filtered for signals that matter.
+
+### 4. Watchtower Alerts
+
+Watchtower is the autonomous monitoring layer.
+
+Alerts should surface things that happened without the user manually clicking scan:
+
+- new public conversation found for a tracked account
+- media transcript completed
+- account score changed materially
+- source failed to resolve
+- Speechmatics or LLM provider failed
+- Cognee memory write failed
+- new sales-ready account detected
+
+The alert panel should support:
+
+- acknowledge
+- open account
+- open scan
+- retry failed workflow
+- view provider details
+
+### 5. Suggested Actions
+
+This is the action queue. It should be small, opinionated, and directly useful.
+
+Examples:
+
+- Approve outreach draft for Ramp
+- Review Acme podcast evidence
+- Run media scan for Stripe
+- Retry failed transcript for Box
+- Add Databricks as competitor keyword for Vercel
+- Open sales brief for Snowflake
+
+Suggested actions should come from real system state, not static cards.
+
+## What The LLM Should Be Allowed To Do
+
+The Home command center should start as an intelligence assistant, not an autonomous
+agent with unrestricted write access.
+
+### Phase 1: Read And Explain
+
+Allowed:
+
+- summarize account changes
+- list priority accounts
+- explain why an account is sales-ready
+- compare accounts
+- retrieve evidence
+- answer dashboard questions
+
+Not allowed:
+
+- mutate account state
+- send outreach
+- trigger expensive media scans without confirmation
+- delete memory or transcripts
+
+### Phase 2: Suggest And Prepare
+
+Allowed:
+
+- prepare outreach drafts
+- propose scan targets
+- suggest ICP keyword improvements
+- create review bundles
+- generate sales briefs
+
+Write actions require explicit user confirmation.
+
+### Phase 3: Controlled Actions
+
+Allowed after confirmation:
+
+- run web scan
+- run media scan
+- mark alert as acknowledged
+- create outreach draft
+- refresh account score
+- retry failed job
+
+Every action should produce an audit event.
+
+## Backend API Surface
+
+### Dashboard Summary
+
+```http
+GET /api/v1/dashboard/summary
+```
+
+Returns the first-screen state in one fast payload.
+
+Suggested response shape:
+
+```json
+{
+  "greeting": "Good morning. 7 accounts changed while you were away.",
+  "priority_accounts": [],
+  "signal_stream": [],
+  "watchtower_alerts": [],
+  "suggested_actions": [],
+  "metrics": {
+    "sales_ready_accounts": 0,
+    "new_signals_24h": 0,
+    "open_outreach_drafts": 0,
+    "failed_jobs": 0
+  }
+}
+```
+
+### Command Center
+
+```http
+POST /api/v1/dashboard/command
+```
+
+Request:
+
+```json
+{
+  "prompt": "Which accounts need outreach today?"
+}
+```
+
+Response:
+
+```json
+{
+  "answer_markdown": "...",
+  "cards": [],
+  "actions": [],
+  "citations": []
+}
+```
+
+The command endpoint should use retrieval, not a blind database dump.
+
+Recommended context assembly:
+
+1. classify user intent
+2. fetch relevant accounts, scans, signals, alerts, drafts
+3. fetch Cognee memory snippets where useful
+4. send compact structured context to the LLM
+5. validate returned actions against an allowlist
+6. return answer, cards, citations, and proposed actions
+
+### Action Execution
+
+```http
+POST /api/v1/dashboard/actions/{action_id}/execute
+```
+
+Used only for confirmed actions.
+
+Examples:
+
+- run media scan
+- retry failed job
+- create outreach draft
+- acknowledge alert
+- open account briefing
+
+## Data Model Additions
+
+### `dashboard_actions`
+
+Stores suggested and confirmed actions.
+
+Fields:
+
+- `id`
+- `account_id`
+- `action_type`
+- `title`
+- `description`
+- `status`
+- `priority`
+- `source_type`
+- `source_id`
+- `metadata_json`
+- `created_at`
+- `updated_at`
+- `completed_at`
+
+### `dashboard_command_events`
+
+Audit trail for LLM interactions.
+
+Fields:
+
+- `id`
+- `prompt`
+- `intent`
+- `context_summary_json`
+- `response_summary`
+- `proposed_actions_json`
+- `executed_action_ids_json`
+- `model`
+- `duration_ms`
+- `created_at`
+
+### `watchtower_alerts`
+
+If not already represented by notifications, alerts should have their own operational
+state.
+
+Fields:
+
+- `id`
+- `account_id`
+- `alert_type`
+- `severity`
+- `title`
+- `body`
+- `status`
+- `source_id`
+- `source_url`
+- `metadata_json`
+- `created_at`
+- `acknowledged_at`
+
+## Frontend Product Requirements
+
+The Home page should feel operational, not decorative.
+
+Layout:
+
+- top command center
+- compact metrics row
+- two-column main area
+- priority accounts and suggested actions on the left
+- signal stream and watchtower alerts on the right
+
+Interaction details:
+
+- pressing Enter submits the command
+- suggested prompts appear only when the command box is empty
+- command results render as answer plus structured cards
+- action buttons are explicit and confirm expensive operations
+- cards link into account detail, scan detail, evidence drawer, or outreach review
+
+Avoid:
+
+- generic marketing hero
+- empty decorative cards
+- static fake suggestions
+- oversized typography inside dense dashboard areas
+- landing directly into a table
+
+## MVP Build Order
+
+### Phase 1: Static Home Shell
+
+- create `/home` or make dashboard root use Home
+- add command center UI
+- add empty states
+- add placeholder cards backed by real API shapes
+- keep Accounts accessible from nav
+
+### Phase 2: Dashboard Summary API
+
+- aggregate priority accounts
+- aggregate latest signals
+- aggregate watchtower alerts
+- aggregate suggested actions
+- return compact metrics
+
+### Phase 3: Command Center Read Mode
+
+- implement `POST /api/v1/dashboard/command`
+- support read-only questions
+- return cited answers and account cards
+- no write actions yet
+
+### Phase 4: Suggested Actions
+
+- generate actions from real system state
+- add action status
+- support acknowledge/open/review actions
+- add audit events
+
+### Phase 5: Confirmed Operations
+
+- allow confirmed scan triggers
+- allow retry failed jobs
+- allow outreach draft creation
+- record every action execution
+
+### Phase 6: Proactive Experience
+
+- connect watchtower events
+- show new alert indicators
+- add live refresh or polling
+- later: WebSocket or server-sent events
+
+## Success Criteria
+
+The Home page is successful if a user can answer these in under 30 seconds:
+
+- What changed since I last opened Tendril?
+- Which accounts deserve attention?
+- Why do they matter?
+- What evidence supports that?
+- What should I do next?
+
+---
+
+# Pillar 2: Multimodal Signal Discovery Engine
 
 ## Product Thesis
 
@@ -15,7 +501,7 @@ The product promise:
 > extracts timestamped evidence, updates account memory, and alerts the rep before the
 > opportunity goes stale.
 
-This is not an "audio scraping" feature. It is a **Multimodal Signal Discovery Engine**.
+This is not an audio scraping feature. It is a **Multimodal Signal Discovery Engine**.
 
 ## Strategic Scope
 
@@ -63,8 +549,7 @@ completed sub-step instead of starting over.
 
 Recommended infrastructure:
 
-- **Near-term**: database-backed jobs table plus worker loop, because the current app is
-  small and SQLite/Postgres migration is still in progress.
+- **Near-term**: database-backed jobs table plus worker loop.
 - **Product-grade**: Temporal, Celery, BullMQ, or another durable workflow queue.
 - **Non-negotiable design**: idempotent stage handlers, persisted inputs/outputs, retry
   counts, error states, and resumability.
@@ -82,7 +567,7 @@ The system should implement media hashing:
 4. If the hash exists, reuse the stored transcript.
 5. If the hash does not exist, transcribe once and cache the result.
 
-This gives us Content Addressable Storage (CAS):
+This gives us Content Addressable Storage:
 
 - `media_hash` becomes the durable identity of the audio.
 - Multiple accounts can link to the same `media_asset`.
@@ -154,7 +639,7 @@ Suggested fields:
 - `id`
 - `account_id`
 - `source_url`
-- `source_type` (`youtube`, `podcast`, `earnings_call`, `webinar`, `conference`, `other`)
+- `source_type`
 - `title`
 - `description`
 - `publisher`
@@ -197,7 +682,7 @@ Suggested fields:
 
 - `id`
 - `media_asset_id`
-- `provider` (`speechmatics`, `captions`, `existing_transcript`)
+- `provider`
 - `language`
 - `raw_text`
 - `scrubbed_text`
@@ -228,7 +713,7 @@ Suggested fields:
 
 ### Signals
 
-The existing `signals` table can be reused if we add enough metadata:
+The existing signals model can be reused if it carries conversation metadata:
 
 - `source_modality = "conversation"`
 - `media_source_id`

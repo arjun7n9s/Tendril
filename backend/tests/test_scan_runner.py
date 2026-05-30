@@ -281,3 +281,45 @@ def test_memory_jsonl_written_for_scan(client: TestClient, seeded_account: str) 
     assert jsonl_path.exists(), f"expected memory packets at {jsonl_path}"
     lines = jsonl_path.read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) >= 3
+
+
+def test_scan_emits_memory_read_event(client: TestClient, seeded_account: str) -> None:
+    """The read loop must emit a memory_read event during the graphing phase."""
+    create = client.post(
+        f"/api/v1/accounts/{seeded_account}/scans",
+        json={"mode": "mock"},
+    )
+    scan_id = create.json()["scan_id"]
+    run_scan(scan_id)
+
+    events = client.get(f"/api/v1/scans/{scan_id}/events").json()["items"]
+    memory_reads = [e for e in events if e["event_type"] == "memory_read"]
+    assert memory_reads, "expected a memory_read event from the read loop"
+    # It should report how many packets it recalled.
+    assert "recalled" in memory_reads[0]["message"]
+
+
+def test_second_scan_recalls_prior_account_memory(
+    client: TestClient, seeded_account: str
+) -> None:
+    """A second scan should recall packets written by the first scan.
+
+    This proves memory accumulates across scans (the cross-scan read loop),
+    not just within a single run.
+    """
+    first = client.post(
+        f"/api/v1/accounts/{seeded_account}/scans", json={"mode": "mock"}
+    ).json()["scan_id"]
+    run_scan(first)
+
+    second = client.post(
+        f"/api/v1/accounts/{seeded_account}/scans", json={"mode": "mock"}
+    ).json()["scan_id"]
+    run_scan(second)
+
+    events = client.get(f"/api/v1/scans/{second}/events").json()["items"]
+    reads = [e for e in events if e["event_type"] == "memory_read"]
+    assert reads, "expected memory_read on the second scan"
+    meta = reads[0].get("metadata_json") or {}
+    # The second scan must see prior-scan packets in its recall.
+    assert meta.get("prior", 0) >= 1

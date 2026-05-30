@@ -164,3 +164,15 @@ class ScanEventLogger:
         if replayed:
             metadata.setdefault("replayed", True)
         return self.emit(event_type, message, phase=phase, metadata=metadata or None)
+
+    def memory_read(
+        self,
+        message: str,
+        *,
+        phase: ScanStatus | None = None,
+        **metadata: Any,
+    ) -> ScanEvent:
+        """Emit a memory_read event (graph recall before briefing)."""
+        return self.emit(
+            ScanEventType.memory_read, message, phase=phase, metadata=metadata or None
+        )

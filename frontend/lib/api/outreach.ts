@@ -1,5 +1,11 @@
 import { api } from "./client";
-import type { OutreachList, OutreachPatch, OutreachRead, OutreachReject } from "@/lib/types";
+import type {
+  OutreachList,
+  OutreachPatch,
+  OutreachRead,
+  OutreachRegenerate,
+  OutreachReject,
+} from "@/lib/types";
 
 export function listPendingOutreach(allHistory = false, signal?: AbortSignal) {
   return api.get<OutreachList>("/api/v1/outreach/pending", {
@@ -30,4 +36,18 @@ export function patchOutreachDraft(
   signal?: AbortSignal,
 ) {
   return api.patch<OutreachRead>(`/api/v1/outreach/${draftId}`, { body, signal });
+}
+
+export function regenerateOutreachDraft(
+  draftId: string,
+  body: OutreachRegenerate,
+  signal?: AbortSignal,
+) {
+  // Regeneration may call the model gateway; give it more headroom than the
+  // default request timeout.
+  return api.post<OutreachRead>(`/api/v1/outreach/${draftId}/regenerate`, {
+    body,
+    signal,
+    timeoutMs: 45_000,
+  });
 }

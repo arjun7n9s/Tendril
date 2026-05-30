@@ -17,8 +17,8 @@ def test_import_endpoint_then_list_accounts(
         )
     assert resp.status_code == 200, resp.text
     body = resp.json()
-    assert body["accounts_created"] >= 5
-    assert body["people_created"] >= 3
+    assert body["accounts_created"] >= 20
+    assert body["people_created"] >= 1
     assert body["icp_profiles_created"] == 1
 
     list_resp = client.get("/api/v1/accounts", params={"limit": 100})
