@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌿 TENDRIL
+# 📡 TENDRIL
 
 ### Live GTM Intelligence — *who's ready to buy now, why it matters, and what to say next*
 
@@ -264,6 +264,6 @@ kiro/      Planning, architecture, requirements, and credential docs
 
 <br/>
 
-**Team Tron** · Built for the Bright Data *Web Data Unlocked* Hackathon
+**Team TroN** · Built for the Bright Data *Web Data Unlocked* Hackathon
 
 </div>
