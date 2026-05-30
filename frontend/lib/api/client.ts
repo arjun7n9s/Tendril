@@ -66,6 +66,10 @@ async function request<T>(
   let payload: BodyInit | undefined;
   const finalHeaders: Record<string, string> = {
     Accept: "application/json",
+    // Bypass ngrok's free-tier browser interstitial so we always get JSON
+    // back from the API rather than ngrok's HTML warning page. Harmless on
+    // non-ngrok backends (unknown request headers are ignored).
+    "ngrok-skip-browser-warning": "true",
     ...(headers ?? {}),
   };
   if (formData) {
